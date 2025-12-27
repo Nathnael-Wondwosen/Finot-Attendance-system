@@ -1,199 +1,243 @@
 import 'package:sqflite/sqflite.dart';
-import '../../core/database_helper.dart';
-import '../models/student_model.dart';
+import 'package:path/path.dart';
 import '../models/class_model.dart';
-import '../models/section_model.dart';
+import '../models/student_model.dart';
 import '../models/attendance_model.dart';
-import '../models/sync_queue_model.dart';
 
 class LocalDataSource {
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
-
-  // Student methods
-  Future<List<Student>> getStudents() async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('students');
-    return List.generate(maps.length, (i) => Student.fromMap(maps[i]));
+  static Database? _database;
+  
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
   }
 
-  Future<void> saveStudents(List<Student> students) async {
-    final db = await _databaseHelper.database;
-    await db.transaction((txn) async {
-      await txn.delete('students');
-      for (var student in students) {
-        await txn.insert('students', student.toMap());
-      }
+  Future<Database> _initDatabase() async {
+    String path = join(await getDatabasesPath(), 'attendance.db');
+    return await openDatabase(
+      path,
+      version: 1,
+      onCreate: _createDatabase,
+    );
+  }
+
+  Future<void> _createDatabase(Database db, int version) async {
+    // Create classes table
+    await db.execute('''
+      CREATE TABLE attendance_classes (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        teacher_name TEXT,
+        academic_year INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    // Create students table
+    await db.execute('''
+      CREATE TABLE students (
+        id INTEGER PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        gender TEXT,
+        birth_date TEXT,
+        current_grade TEXT,
+        father_phone TEXT,
+        mother_phone TEXT,
+        phone_number TEXT,
+        has_spiritual_father TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    ''');
+
+    // Create attendance records table
+    await db.execute('''
+      CREATE TABLE attendance_records (
+        id INTEGER PRIMARY KEY,
+        student_id INTEGER NOT NULL,
+        class_id TEXT NOT NULL,
+        date TEXT NOT NULL,
+        status TEXT NOT NULL,
+        notes TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        synced INTEGER DEFAULT 0,
+        FOREIGN KEY (student_id) REFERENCES students (id),
+        FOREIGN KEY (class_id) REFERENCES attendance_classes (id)
+      )
+    ''');
+  }
+
+  // Classes operations
+  Future<int> insertClass(ClassModel classModel) async {
+    final db = await database;
+    return await db.insert(
+      'attendance_classes',
+      classModel.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<ClassModel>> getClasses() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('attendance_classes');
+
+    return List.generate(maps.length, (i) {
+      return ClassModel.fromMap(maps[i]);
     });
   }
 
-  Future<List<Student>> getStudentsByClassAndSection(int classId, int sectionId) async {
-    final db = await _databaseHelper.database;
+  Future<ClassModel?> getClassById(String id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'attendance_classes',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return ClassModel.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  // Students operations
+  Future<int> insertStudent(StudentModel studentModel) async {
+    final db = await database;
+    return await db.insert(
+      'students',
+      studentModel.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<int> insertStudents(List<StudentModel> students) async {
+    final db = await database;
+    int count = 0;
+    
+    await db.transaction((txn) async {
+      for (final student in students) {
+        await txn.insert(
+          'students',
+          student.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        count++;
+      }
+    });
+    
+    return count;
+  }
+
+  Future<List<StudentModel>> getStudents() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('students');
+
+    return List.generate(maps.length, (i) {
+      return StudentModel.fromMap(maps[i]);
+    });
+  }
+
+  Future<List<StudentModel>> getStudentsByClass(String classId) async {
+    final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'students',
-      where: 'class_id = ? AND section_id = ?',
-      whereArgs: [classId, sectionId],
-    );
-    return List.generate(maps.length, (i) => Student.fromMap(maps[i]));
-  }
-
-  // Class methods
-  Future<List<ClassModel>> getClasses() async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('classes');
-    return List.generate(maps.length, (i) => ClassModel.fromMap(maps[i]));
-  }
-
-  Future<void> saveClasses(List<ClassModel> classes) async {
-    final db = await _databaseHelper.database;
-    await db.transaction((txn) async {
-      await txn.delete('classes');
-      for (var classModel in classes) {
-        await txn.insert('classes', classModel.toMap());
-      }
-    });
-  }
-
-  // Section methods
-  Future<List<SectionModel>> getSections() async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query('sections');
-    return List.generate(maps.length, (i) => SectionModel.fromMap(maps[i]));
-  }
-
-  Future<List<SectionModel>> getSectionsByClass(int classId) async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'sections',
-      where: 'class_id = ?',
+      where: 'id IN (SELECT student_id FROM attendance_records WHERE class_id = ?)',
       whereArgs: [classId],
     );
-    return List.generate(maps.length, (i) => SectionModel.fromMap(maps[i]));
-  }
 
-  Future<void> saveSections(List<SectionModel> sections) async {
-    final db = await _databaseHelper.database;
-    await db.transaction((txn) async {
-      await txn.delete('sections');
-      for (var section in sections) {
-        await txn.insert('sections', section.toMap());
-      }
+    return List.generate(maps.length, (i) {
+      return StudentModel.fromMap(maps[i]);
     });
   }
 
-  // Attendance methods
-  Future<List<AttendanceModel>> getAttendanceByDate(String date) async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'attendance_local',
-      where: 'date = ?',
-      whereArgs: [date],
-    );
-    return List.generate(maps.length, (i) => AttendanceModel.fromMap(maps[i]));
-  }
-
-  Future<List<AttendanceModel>> getAttendanceByClassSectionDate(int classId, int sectionId, String date) async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'attendance_local',
-      where: 'class_id = ? AND section_id = ? AND date = ?',
-      whereArgs: [classId, sectionId, date],
-    );
-    return List.generate(maps.length, (i) => AttendanceModel.fromMap(maps[i]));
-  }
-
-  Future<void> saveAttendance(AttendanceModel attendance) async {
-    final db = await _databaseHelper.database;
-    
-    // Check if attendance already exists for this student on this date
-    final List<Map<String, dynamic>> existing = await db.query(
-      'attendance_local',
-      where: 'student_id = ? AND date = ?',
-      whereArgs: [attendance.studentId, attendance.date],
-    );
-
-    if (existing.isNotEmpty) {
-      // Update existing attendance
-      await db.update(
-        'attendance_local',
-        attendance.toMap()..remove('id'),
-        where: 'student_id = ? AND date = ?',
-        whereArgs: [attendance.studentId, attendance.date],
-      );
-    } else {
-      // Insert new attendance
-      await db.insert('attendance_local', attendance.toMap());
-    }
-  }
-
-  Future<void> updateAttendance(AttendanceModel attendance) async {
-    final db = await _databaseHelper.database;
-    await db.update(
-      'attendance_local',
-      attendance.toMap()..remove('id'),
-      where: 'id = ?',
-      whereArgs: [attendance.id],
+  // Attendance operations
+  Future<int> insertAttendance(AttendanceModel attendanceModel) async {
+    final db = await database;
+    return await db.insert(
+      'attendance_records',
+      attendanceModel.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<List<AttendanceModel>> getUnsyncedAttendance() async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'attendance_local',
-      where: 'synced = ?',
-      whereArgs: [0],
-    );
-    return List.generate(maps.length, (i) => AttendanceModel.fromMap(maps[i]));
-  }
-
-  Future<void> markAttendanceAsSynced(int attendanceId) async {
-    final db = await _databaseHelper.database;
-    await db.update(
-      'attendance_local',
-      {'synced': 1},
-      where: 'id = ?',
-      whereArgs: [attendanceId],
-    );
-  }
-
-  Future<void> clearLocalAttendance() async {
-    final db = await _databaseHelper.database;
-    await db.delete('attendance_local');
-  }
-
-  // Sync Queue methods
-  Future<void> addToSyncQueue(String tableName, int recordId, String action, String data) async {
-    final db = await _databaseHelper.database;
-    final syncQueue = SyncQueueModel(
-      tableName: tableName,
-      recordId: recordId,
-      action: action,
-      data: data,
-    );
-    await db.insert('sync_queue', syncQueue.toMap());
-  }
-
-  Future<List<SyncQueueModel>> getUnsyncedItems() async {
-    final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'sync_queue',
-      where: 'synced = ?',
-      whereArgs: [0],
-    );
-    return List.generate(maps.length, (i) => SyncQueueModel.fromMap(maps[i]));
-  }
-
-  Future<void> markSyncQueueItemAsSynced(int id) async {
-    final db = await _databaseHelper.database;
-    await db.update(
-      'sync_queue',
-      {'synced': 1},
+  Future<int> updateAttendanceSyncStatus(int id, bool synced) async {
+    final db = await database;
+    return await db.update(
+      'attendance_records',
+      {'synced': synced ? 1 : 0},
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
-  Future<void> clearSyncQueue() async {
-    final db = await _databaseHelper.database;
-    await db.delete('sync_queue');
+  Future<List<AttendanceModel>> getUnsyncedAttendance() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'attendance_records',
+      where: 'synced = ?',
+      whereArgs: [0], // 0 means not synced
+    );
+
+    return List.generate(maps.length, (i) {
+      return AttendanceModel.fromMap(maps[i]);
+    });
+  }
+
+  Future<List<AttendanceModel>> getAttendanceByClass(String classId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'attendance_records',
+      where: 'class_id = ?',
+      whereArgs: [classId],
+    );
+
+    return List.generate(maps.length, (i) {
+      return AttendanceModel.fromMap(maps[i]);
+    });
+  }
+
+  Future<List<AttendanceModel>> getAttendanceByStudent(int studentId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'attendance_records',
+      where: 'student_id = ?',
+      whereArgs: [studentId],
+    );
+
+    return List.generate(maps.length, (i) {
+      return AttendanceModel.fromMap(maps[i]);
+    });
+  }
+
+  // Clear all data (for sync purposes)
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.delete('attendance_records');
+    await db.delete('students');
+    await db.delete('attendance_classes');
+  }
+
+  // Clear attendance records (for refresh)
+  Future<void> clearAttendance() async {
+    final db = await database;
+    await db.delete('attendance_records');
+  }
+
+  // Get student by ID
+  Future<StudentModel?> getStudentById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'students',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return StudentModel.fromMap(maps.first);
+    }
+    return null;
   }
 }

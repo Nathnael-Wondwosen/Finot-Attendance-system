@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class AppConstants {
   // API Configuration
   static const String baseUrl = 'https://your-api-url.com/api';
@@ -39,4 +41,24 @@ class Routes {
   static const String syncStatus = '/sync-status';
   static const String attendanceHistory = '/attendance-history';
   static const String settings = '/settings';
+  static const String themeSettings = '/theme-settings';
+}
+
+// Responsive Breakpoints
+class Breakpoints {
+  static const double small = 600;
+  static const double medium = 1100;
+  static const double large = 1400;
+}
+
+// Responsive Spacing
+class Spacing {
+  static const EdgeInsets paddingAll = EdgeInsets.all(16.0);
+  static const EdgeInsets paddingHorizontal = EdgeInsets.symmetric(horizontal: 16.0);
+  static const EdgeInsets paddingVertical = EdgeInsets.symmetric(vertical: 16.0);
+  static const EdgeInsets paddingOnlyTop = EdgeInsets.only(top: 16.0);
+  static const EdgeInsets paddingOnlyBottom = EdgeInsets.only(bottom: 16.0);
+  static const EdgeInsets paddingOnlyLeft = EdgeInsets.only(left: 16.0);
+  static const EdgeInsets paddingOnlyRight = EdgeInsets.only(right: 16.0);
+  static const EdgeInsets paddingSymmetric = EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0);
 }

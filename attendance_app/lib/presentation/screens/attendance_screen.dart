@@ -1,32 +1,67 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/ui_components.dart';
+import '../../core/typography.dart';
+import '../../core/responsive_layout.dart';
+import '../../data/models/student_model.dart';
+import '../../data/models/attendance_model.dart';
+import '../../data/datasources/local_data_source.dart';
 
-// Sample student data - in real app this would come from repository
-final List<Map<String, dynamic>> _students = [
-  {'id': 1, 'name': 'John Doe', 'rollNumber': '001'},
-  {'id': 2, 'name': 'Jane Smith', 'rollNumber': '002'},
-  {'id': 3, 'name': 'Robert Johnson', 'rollNumber': '003'},
-  {'id': 4, 'name': 'Emily Davis', 'rollNumber': '004'},
-  {'id': 5, 'name': 'Michael Wilson', 'rollNumber': '005'},
-  {'id': 6, 'name': 'Sarah Brown', 'rollNumber': '006'},
-  {'id': 7, 'name': 'David Taylor', 'rollNumber': '007'},
-  {'id': 8, 'name': 'Lisa Anderson', 'rollNumber': '008'},
-];
-
-class AttendanceScreen extends StatefulWidget {
+class AttendanceScreen extends ConsumerStatefulWidget {
+  final Map<String, dynamic>? arguments;
+  
+  const AttendanceScreen({this.arguments});
+  
   @override
-  State<AttendanceScreen> createState() => _AttendanceScreenState();
+  ConsumerState<AttendanceScreen> createState() => _AttendanceScreenState();
 }
 
-class _AttendanceScreenState extends State<AttendanceScreen> {
-  // Map to store attendance status for each student
+class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
+  List<StudentModel> _students = [];
   final Map<int, String> _attendanceStatus = {};
+  bool _isLoading = true;
+  String _selectedClassId = '';
+  String _selectedClassName = '';
 
   @override
   void initState() {
     super.initState();
-    // Initialize all students as present by default
-    for (var student in _students) {
-      _attendanceStatus[student['id']] = 'present';
+    if (widget.arguments != null) {
+      _selectedClassId = widget.arguments!['classId'] ?? '';
+      _selectedClassName = widget.arguments!['className'] ?? '';
+    }
+    _loadStudents();
+  }
+
+  Future<void> _loadStudents() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final localDataSource = LocalDataSource();
+      // In a real implementation, we would get students by class
+      // For now, we'll get all students
+      final students = await localDataSource.getStudents();
+      
+      setState(() {
+        _students = students;
+        // Initialize all students as present by default
+        for (var student in _students) {
+          _attendanceStatus[student.id] = 'present';
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading students: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -34,89 +69,224 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     setState(() {
       if (_attendanceStatus[studentId] == 'present') {
         _attendanceStatus[studentId] = 'absent';
+      } else if (_attendanceStatus[studentId] == 'absent') {
+        _attendanceStatus[studentId] = 'late';
       } else {
         _attendanceStatus[studentId] = 'present';
       }
     });
   }
 
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'present':
+        return 'Present';
+      case 'absent':
+        return 'Absent';
+      case 'late':
+        return 'Late';
+      default:
+        return 'Present';
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'present':
+        return Colors.green;
+      case 'absent':
+        return Colors.red;
+      case 'late':
+        return Colors.orange;
+      default:
+        return Colors.green;
+    }
+  }
+
+  Future<void> _saveAttendance() async {
+    try {
+      final localDataSource = LocalDataSource();
+      
+      // Create attendance records for all students
+      for (final student in _students) {
+        final attendance = AttendanceModel(
+          id: student.id, // Using student id as attendance id temporarily
+          studentId: student.id,
+          classId: _selectedClassId,
+          date: DateTime.now(),
+          status: _attendanceStatus[student.id] ?? 'present',
+          notes: '',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          synced: false, // Mark as not synced initially
+        );
+        
+        await localDataSource.insertAttendance(attendance);
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Attendance saved locally!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      // Navigate back after saving
+      Navigator.of(context).pop();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving attendance: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Attendance'),
+        title: Text(_selectedClassName.isNotEmpty ? 'Attendance: $_selectedClassName' : 'Attendance'),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
-            onPressed: () {
-              // Save attendance logic would go here
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Attendance saved locally!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
+            onPressed: _isLoading ? null : _saveAttendance,
           ),
         ],
       ),
       body: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.blue.shade50,
+            padding: EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: ScreenSize.isSmallScreen(context) ? 12 : 16,
+            ),
+            color: Colors.grey.shade50,
+            child: ScreenSize.isSmallScreen(context)
+                ? Column(
+                    children: [
+                      _buildStatusChip('present', 'Present', Colors.green),
+                      const SizedBox(height: 8),
+                      _buildStatusChip('absent', 'Absent', Colors.red),
+                      const SizedBox(height: 8),
+                      _buildStatusChip('late', 'Late', Colors.orange),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStatusChip('present', 'Present', Colors.green),
+                      _buildStatusChip('absent', 'Absent', Colors.red),
+                      _buildStatusChip('late', 'Late', Colors.orange),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildStatusChip('present', 'Present', Colors.green),
-                _buildStatusChip('absent', 'Absent', Colors.red),
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search students...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+          const SizedBox(height: 16),
           Expanded(
-            child: ListView.builder(
-              itemCount: _students.length,
-              itemBuilder: (context, index) {
-                final student = _students[index];
-                final status = _attendanceStatus[student['id']] ?? 'present';
-                
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      child: Text(student['name'][0]),
-                    ),
-                    title: Text(student['name']),
-                    subtitle: Text('Roll No: ${student['rollNumber']}'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: status == 'present' ? Colors.green.shade100 : Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        status == 'present' ? 'Present' : 'Absent',
-                        style: TextStyle(
-                          color: status == 'present' ? Colors.green : Colors.red,
-                          fontWeight: FontWeight.bold,
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _students.isEmpty
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person,
+                              size: 80,
+                              color: Colors.grey,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'No students found',
+                              style: TextStyle(fontSize: 18, color: Colors.grey),
+                            ),
+                          ],
                         ),
+                      )
+                    : ListView.builder(
+                        itemCount: _students.length,
+                        itemBuilder: (context, index) {
+                          final student = _students[index];
+                          final status = _attendanceStatus[student.id] ?? 'present';
+                          
+                          return Card(
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(status).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    student.fullName.substring(0, 1).toUpperCase(),
+                                    style: TextStyle(
+                                      color: _getStatusColor(status),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              title: Text(
+                                student.fullName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              subtitle: Text(
+                                student.currentGrade ?? 'Grade not specified',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: _getStatusColor(status).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  _getStatusText(status),
+                                  style: TextStyle(
+                                    color: _getStatusColor(status),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              onTap: () => _toggleAttendance(student.id),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                    onTap: () => _toggleAttendance(student['id']),
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Navigate to summary
-          Navigator.of(context).pop(); // For now, just go back
-        },
+        onPressed: _isLoading ? null : _saveAttendance,
         label: const Text('Save & Continue'),
         icon: const Icon(Icons.check),
       ),
@@ -125,11 +295,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   Widget _buildStatusChip(String status, String label, Color color) {
     final count = _attendanceStatus.values.where((s) => s == status).length;
-    return Column(
-      children: [
-        Text(count.toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text(label, style: TextStyle(color: color)),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Text(
+            count.toString(),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -58,6 +58,9 @@ dependencies:
   # Connectivity
   connectivity_plus: ^6.1.0
 
+  # Preferences
+  shared_preferences: ^2.2.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

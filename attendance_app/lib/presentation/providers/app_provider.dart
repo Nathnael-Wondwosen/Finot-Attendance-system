@@ -13,6 +13,8 @@ import '../../domain/repositories/class_repository.dart';
 import '../../domain/repositories/section_repository.dart';
 import '../../domain/repositories/attendance_repository.dart';
 import '../../domain/repositories/sync_repository.dart';
+import '../providers/theme_provider.dart';
+import '../../core/sync_service.dart';
 
 // This is a basic provider that will be used to initialize our repositories
 final localDataSourceProvider = Provider<LocalDataSource>((ref) {
@@ -21,6 +23,15 @@ final localDataSourceProvider = Provider<LocalDataSource>((ref) {
 
 final remoteDataSourceProvider = Provider<RemoteDataSource>((ref) {
   return RemoteDataSource();
+});
+
+// Sync service provider
+final syncServiceProvider = Provider<SyncService>((ref) {
+  final syncRepository = ref.read(syncRepositoryProvider);
+  final classRepository = ref.read(classRepositoryProvider);
+  final studentRepository = ref.read(studentRepositoryProvider);
+  final attendanceRepository = ref.read(attendanceRepositoryProvider);
+  return SyncService(syncRepository, classRepository, studentRepository, attendanceRepository);
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

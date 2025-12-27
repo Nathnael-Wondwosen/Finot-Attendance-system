@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants.dart';
+import '../../core/ui_components.dart';
 import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _offlineMode = true;
 
   @override
   void dispose() {
@@ -58,14 +60,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 size: 80,
                 color: Theme.of(context).colorScheme.primary,
               ),
-              const SizedBox(height: 30),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: 'Email or Phone',
-                  prefixIcon: Icon(Icons.person),
-                  border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              const Text(
+                'Finot Attendance',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Please use the sample credentials below',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 30),
+              CustomTextField(
+                label: 'Email or Phone',
+                hint: 'admin@example.com or 123456789',
+                controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -75,13 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              TextFormField(
+              CustomTextField(
+                label: 'Password',
+                hint: 'Enter any password',
                 controller: _passwordController,
-                decoration: const InputDecoration(
-                  labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
-                ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -98,17 +110,62 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? const Center(
                         child: CircularProgressIndicator(),
                       )
-                    : ElevatedButton(
+                    : CustomButton(
+                        text: 'Login',
                         onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
                       ),
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Sample Credentials (Demo Mode)',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Email:', style: TextStyle(fontWeight: FontWeight.w600)),
+                              Text('admin@example.com'),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Phone:', style: TextStyle(fontWeight: FontWeight.w600)),
+                              Text('123456789'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text('Password: Any value (e.g., password123)', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Note: This is a demo app. Any credentials will work.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               Row(
@@ -116,8 +173,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   const Text('Offline Mode'),
                   Switch(
-                    value: true, // Always true for this demo
-                    onChanged: (value) {},
+                    value: _offlineMode,
+                    onChanged: (value) {
+                      setState(() {
+                        _offlineMode = value;
+                      });
+                    },
                   ),
                 ],
               ),

@@ -1,45 +1,57 @@
 class ClassModel {
-  final int? id;
-  final int? serverId;
+  final String id;  // Changed from int to String based on SQL schema
   final String name;
-  final String? createdAt;
-  final String? updatedAt;
+  final String? teacherName;
+  final int academicYear;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
   ClassModel({
-    this.id,
-    this.serverId,
+    required this.id,
     required this.name,
-    this.createdAt,
-    this.updatedAt,
+    this.teacherName,
+    required this.academicYear,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'server_id': serverId,
       'name': name,
-      'created_at': createdAt,
-      'updated_at': updatedAt,
+      'teacher_name': teacherName,
+      'academic_year': academicYear,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
   factory ClassModel.fromMap(Map<String, dynamic> map) {
     return ClassModel(
-      id: map['id'],
-      serverId: map['server_id'],
+      id: map['id'] ?? '',
       name: map['name'] ?? '',
-      createdAt: map['created_at'],
-      updatedAt: map['updated_at'],
+      teacherName: map['teacher_name'],
+      academicYear: map['academic_year']?.toInt() ?? 0,
+      createdAt: DateTime.parse(map['created_at']),
+      updatedAt: DateTime.parse(map['updated_at']),
     );
   }
 
-  // For API response
-  factory ClassModel.fromJson(Map<String, dynamic> json) {
+  ClassModel copyWith({
+    String? id,
+    String? name,
+    String? teacherName,
+    int? academicYear,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
     return ClassModel(
-      serverId: json['id'],
-      name: json['name'] ?? '',
-      createdAt: json['created_at'],
-      updatedAt: json['updated_at'],
+      id: id ?? this.id,
+      name: name ?? this.name,
+      teacherName: teacherName ?? this.teacherName,
+      academicYear: academicYear ?? this.academicYear,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
