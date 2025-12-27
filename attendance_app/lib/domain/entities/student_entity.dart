@@ -19,6 +19,10 @@ class StudentEntity {
     this.updatedAt,
   });
 
+  // Adding getters for UI compatibility
+  String get fullName => name;
+  String? get currentGrade => null; // Placeholder since not in the entity
+
   // Convert to DTO for data layer
   Map<String, dynamic> toDto() {
     return {

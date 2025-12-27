@@ -17,8 +17,7 @@ class SyncService {
   // Download classes and students from remote to local
   Future<bool> downloadClassData(String classId) async {
     try {
-      // This would be implemented in the repository
-      // For now using direct repository call
+      // This calls the proper method in the repository
       return await (_syncRepository as dynamic).downloadClassData(classId);
     } catch (e) {
       print('Error downloading class data: $e');
@@ -29,8 +28,7 @@ class SyncService {
   // Download all classes from remote to local
   Future<bool> downloadAllClasses() async {
     try {
-      // Get all classes from remote
-      // This would be implemented in the repository
+      // This calls the proper method in the repository
       return await (_syncRepository as dynamic).downloadAllClasses();
     } catch (e) {
       print('Error downloading all classes: $e');
@@ -41,7 +39,7 @@ class SyncService {
   // Upload unsynced attendance records to remote
   Future<bool> uploadAttendanceData() async {
     try {
-      // This would be implemented in the repository
+      // This calls the proper method in the repository
       return await (_syncRepository as dynamic).uploadAttendanceData();
     } catch (e) {
       print('Error uploading attendance data: $e');

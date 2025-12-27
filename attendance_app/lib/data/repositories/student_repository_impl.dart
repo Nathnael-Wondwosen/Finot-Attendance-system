@@ -14,7 +14,7 @@ class StudentRepositoryImpl implements StudentRepository {
     // Convert StudentModel to StudentEntity
     return studentModels.map((model) => StudentEntity(
       id: model.id,
-      serverId: null, // Not used in our schema
+      serverId: model.id, // Use the local id as serverId for now
       name: model.fullName,
       rollNumber: null, // Not in our schema
       classId: 0, // Not directly in our schema
@@ -42,6 +42,25 @@ class StudentRepositoryImpl implements StudentRepository {
     )).toList();
     
     await _localDataSource.insertStudents(studentModels);
+  }
+
+  @override
+  Future<List<StudentEntity>> getStudentsByClass(int classId) async {
+    // For now, return all students - in a real implementation, this would query by class
+    // Since our local database doesn't have a direct class relationship in the student table,
+    // we'll return all students but in a real app you would query based on class
+    final studentModels = await _localDataSource.getStudents();
+    // Convert StudentModel to StudentEntity
+    return studentModels.map((model) => StudentEntity(
+      id: model.id,
+      serverId: model.id, // Use the local id as serverId for now
+      name: model.fullName,
+      rollNumber: null, // Not in our schema
+      classId: classId, // Use the provided classId
+      sectionId: 0, // Not in our schema
+      createdAt: model.createdAt.toIso8601String(),
+      updatedAt: model.updatedAt.toIso8601String(),
+    )).toList();
   }
 
   @override

@@ -42,6 +42,7 @@ class Routes {
   static const String attendanceHistory = '/attendance-history';
   static const String settings = '/settings';
   static const String themeSettings = '/theme-settings';
+  static const String mainNavigation = '/main-navigation';
 }
 
 // Responsive Breakpoints

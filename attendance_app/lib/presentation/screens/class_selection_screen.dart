@@ -93,13 +93,13 @@ class _ClassSelectionScreenState extends ConsumerState<ClassSelectionScreen> {
 
     try {
       final syncService = ref.read(syncServiceProvider);
-      final success = await syncService.downloadClassData(classEntity.id.toString());
+      final success = await syncService.downloadClassData(classEntity.serverId.toString());
       
       if (success) {
         // Navigate to attendance screen for this class
         Navigator.of(context).pushNamed(
           '/attendance', 
-          arguments: {'classId': classEntity.id.toString(), 'className': classEntity.name}
+          arguments: {'classId': classEntity.serverId.toString(), 'className': classEntity.name}
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -198,7 +198,7 @@ class _ClassSelectionScreenState extends ConsumerState<ClassSelectionScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              'ID: ${classEntity.id}', // Show ID since we don't have teacher name in entity
+                              'ID: ${classEntity.serverId}', // Show server ID
                               style: TextStyle(
                                 color: Colors.grey[600],
                               ),

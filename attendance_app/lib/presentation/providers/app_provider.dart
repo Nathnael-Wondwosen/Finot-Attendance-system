@@ -62,5 +62,7 @@ final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
 final syncRepositoryProvider = Provider<SyncRepository>((ref) {
   final localDataSource = ref.read(localDataSourceProvider);
   final remoteDataSource = ref.read(remoteDataSourceProvider);
-  return SyncRepositoryImpl(localDataSource, remoteDataSource);
+  final classRepository = ref.read(classRepositoryProvider);
+  final studentRepository = ref.read(studentRepositoryProvider);
+  return SyncRepositoryImpl(localDataSource, remoteDataSource, classRepository, studentRepository);
 });

@@ -6,13 +6,10 @@ import 'core/navigation_service.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/screens/splash_screen.dart';
 import 'presentation/screens/login_screen.dart';
-import 'presentation/screens/dashboard_screen.dart';
-import 'presentation/screens/class_selection_screen.dart';
+import 'presentation/screens/main_navigation_screen.dart';
 import 'presentation/screens/attendance_screen.dart';
 import 'presentation/screens/attendance_summary_screen.dart';
-import 'presentation/screens/sync_status_screen.dart';
 import 'presentation/screens/attendance_history_screen.dart';
-import 'presentation/screens/settings_screen.dart';
 import 'presentation/screens/theme_settings_screen.dart';
 
 void main() async {
@@ -40,13 +37,10 @@ class MyApp extends ConsumerWidget {
       routes: {
         Routes.splash: (context) => SplashScreen(),
         Routes.login: (context) => LoginScreen(),
-        Routes.dashboard: (context) => DashboardScreen(),
-        Routes.classSelection: (context) => ClassSelectionScreen(),
+        Routes.mainNavigation: (context) => MainNavigationScreen(),
         Routes.attendance: (context) => AttendanceScreen(),
         Routes.attendanceSummary: (context) => AttendanceSummaryScreen(),
-        Routes.syncStatus: (context) => SyncStatusScreen(),
         Routes.attendanceHistory: (context) => AttendanceHistoryScreen(),
-        Routes.settings: (context) => SettingsScreen(),
         Routes.themeSettings: (context) => ThemeSettingsScreen(),
       },
     );
@@ -191,4 +185,3 @@ class MyApp extends ConsumerWidget {
     }
   }
 }
-
