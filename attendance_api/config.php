@@ -1,6 +1,6 @@
 <?php
 // Database configuration
-define('DB_HOST', 'https://attendance.finoteselamss.org'); // Replace with your host
+define('DB_HOST', '91.204.209.23'); // Replace with your host
 define('DB_USER', 'finotekv_it'); // Replace with your database username
 define('DB_PASS', 'finotesealm.27'); // Replace with your database password
 define('DB_NAME', 'finotekv_Finot'); // Replace with your database name
