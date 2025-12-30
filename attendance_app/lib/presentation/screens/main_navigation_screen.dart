@@ -7,13 +7,23 @@ import 'sync_status_screen.dart';
 import 'settings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
+  final int initialIndex;
+
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
+
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _selectedIndex = 0;
-  
+  late int _selectedIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
+
   final List<Widget> _screens = [
     DashboardScreen(),
     ClassSelectionScreen(),
@@ -53,10 +63,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _selectedIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -101,11 +108,11 @@ class _NavButton extends StatelessWidget {
   final VoidCallback onTap;
 
   const _NavButton({
-    Key? key,
+    super.key,
     required this.item,
     required this.selected,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -123,9 +130,8 @@ class _NavButton extends StatelessWidget {
           color: selected ? activeColor.withOpacity(0.12) : Colors.transparent,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: selected
-                ? activeColor.withOpacity(0.35)
-                : Colors.transparent,
+            color:
+                selected ? activeColor.withOpacity(0.35) : Colors.transparent,
           ),
         ),
         child: Column(
@@ -140,17 +146,19 @@ class _NavButton extends StatelessWidget {
                   height: selected ? 38 : 30,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: selected
-                        ? activeColor.withOpacity(0.18)
-                        : colorScheme.onSurface.withOpacity(0.04),
+                    color:
+                        selected
+                            ? activeColor.withOpacity(0.18)
+                            : colorScheme.onSurface.withOpacity(0.04),
                   ),
                 ),
                 Icon(
                   item.icon,
                   size: selected ? 22 : 20,
-                  color: selected
-                      ? activeColor
-                      : colorScheme.onSurface.withOpacity(0.65),
+                  color:
+                      selected
+                          ? activeColor
+                          : colorScheme.onSurface.withOpacity(0.65),
                 ),
               ],
             ),
@@ -160,9 +168,10 @@ class _NavButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? activeColor
-                    : colorScheme.onSurface.withOpacity(0.65),
+                color:
+                    selected
+                        ? activeColor
+                        : colorScheme.onSurface.withOpacity(0.65),
               ),
               child: Text(item.label),
             ),

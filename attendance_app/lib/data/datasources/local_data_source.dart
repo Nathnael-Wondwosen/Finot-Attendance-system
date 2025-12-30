@@ -6,7 +6,7 @@ import '../models/attendance_model.dart';
 
 class LocalDataSource {
   static Database? _database;
-  
+
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
@@ -17,9 +17,22 @@ class LocalDataSource {
     String path = join(await getDatabasesPath(), 'attendance.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // Incremented version to trigger onUpgrade
       onCreate: _createDatabase,
+      onUpgrade: _upgradeDatabase,
     );
+  }
+
+  Future<void> _upgradeDatabase(
+    Database db,
+    int oldVersion,
+    int newVersion,
+  ) async {
+    // Handle database upgrade from version 1 to 2
+    if (oldVersion < 2) {
+      // Add class_id column to students table
+      await db.execute('ALTER TABLE students ADD COLUMN class_id INTEGER');
+    }
   }
 
   Future<void> _createDatabase(Database db, int version) async {
@@ -47,6 +60,7 @@ class LocalDataSource {
         mother_phone TEXT,
         phone_number TEXT,
         has_spiritual_father TEXT,
+        class_id INTEGER,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -82,7 +96,9 @@ class LocalDataSource {
 
   Future<List<ClassModel>> getClasses() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('attendance_classes');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'attendance_classes',
+    );
 
     return List.generate(maps.length, (i) {
       return ClassModel.fromMap(maps[i]);
@@ -116,7 +132,7 @@ class LocalDataSource {
   Future<int> insertStudents(List<StudentModel> students) async {
     final db = await database;
     int count = 0;
-    
+
     await db.transaction((txn) async {
       for (final student in students) {
         await txn.insert(
@@ -127,7 +143,7 @@ class LocalDataSource {
         count++;
       }
     });
-    
+
     return count;
   }
 
@@ -135,21 +151,45 @@ class LocalDataSource {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('students');
 
-    return List.generate(maps.length, (i) {
+    final result = List.generate(maps.length, (i) {
       return StudentModel.fromMap(maps[i]);
     });
+
+    print(
+      'LocalDataSource: Retrieved ${result.length} total students from database',
+    );
+    return result;
   }
 
   Future<List<StudentModel>> getStudentsByClass(String classId) async {
     final db = await database;
-    // For now, return all students since we don't have a direct class_id in the students table
-    // In a real implementation, you would need to modify the schema to include class_id in the students table
-    // or create a relationship table
-    final List<Map<String, dynamic>> maps = await db.query('students');
+    // Query students by class_id
+    final List<Map<String, dynamic>> maps = await db.query(
+      'students',
+      where: 'class_id = ?',
+      whereArgs: [int.tryParse(classId)],
+    );
 
-    return List.generate(maps.length, (i) {
+    final result = List.generate(maps.length, (i) {
       return StudentModel.fromMap(maps[i]);
     });
+
+    print(
+      'LocalDataSource: Found ${result.length} students for class ID: $classId',
+    );
+    print(
+      'LocalDataSource: Query parameters - class_id = ${int.tryParse(classId)}',
+    );
+
+    // Debug: Let's also check what values exist in the class_id column
+    final allClassIds = await db.rawQuery(
+      'SELECT DISTINCT class_id FROM students WHERE class_id IS NOT NULL',
+    );
+    print(
+      'LocalDataSource: Available class_ids in database: ${allClassIds.map((row) => row['class_id']).toList()}',
+    );
+
+    return result;
   }
 
   // Attendance operations

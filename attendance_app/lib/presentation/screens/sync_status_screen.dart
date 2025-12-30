@@ -5,6 +5,8 @@ import '../../core/sync_service.dart';
 import '../providers/app_provider.dart';
 
 class SyncStatusScreen extends ConsumerWidget {
+  const SyncStatusScreen({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
@@ -20,20 +22,14 @@ class SyncStatusScreen extends ConsumerWidget {
           children: [
             const Text(
               'Connection',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildConnectionStatusCard(ref),
             const SizedBox(height: 24),
             const Text(
               'Sync Status',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildSyncInfoCard(ref),
@@ -43,7 +39,7 @@ class SyncStatusScreen extends ConsumerWidget {
               onPressed: () async {
                 final syncService = ref.read(syncServiceProvider);
                 final result = await syncService.performFullSync();
-                
+
                 if (result) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -68,7 +64,7 @@ class SyncStatusScreen extends ConsumerWidget {
               onPressed: () async {
                 final syncService = ref.read(syncServiceProvider);
                 final result = await syncService.uploadAttendanceData();
-                
+
                 if (result) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -102,7 +98,7 @@ class SyncStatusScreen extends ConsumerWidget {
             final isConnected = snapshot.data ?? false;
             final status = isConnected ? 'Connected' : 'Disconnected';
             final color = isConnected ? Colors.green : Colors.red;
-            
+
             return Row(
               children: [
                 Container(
@@ -123,10 +119,7 @@ class SyncStatusScreen extends ConsumerWidget {
                   ),
                 ),
                 const Spacer(),
-                Icon(
-                  isConnected ? Icons.wifi : Icons.wifi_off,
-                  color: color,
-                ),
+                Icon(isConnected ? Icons.wifi : Icons.wifi_off, color: color),
               ],
             );
           },
@@ -145,30 +138,36 @@ class SyncStatusScreen extends ConsumerWidget {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            
-            final data = snapshot.data ?? {
-              'unsyncedCount': 0,
-              'isOnline': false,
-              'lastSyncTime': DateTime.now(),
-            };
-            
+
+            final data =
+                snapshot.data ??
+                {
+                  'unsyncedCount': 0,
+                  'isOnline': false,
+                  'lastSyncTime': DateTime.now(),
+                };
+
             final unsyncedCount = data['unsyncedCount'] ?? 0;
             final isOnline = data['isOnline'] ?? false;
-            
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Pending Sync', unsyncedCount.toString(), Icons.sync),
+                _buildInfoRow(
+                  'Pending Sync',
+                  unsyncedCount.toString(),
+                  Icons.sync,
+                ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
-                  'Connection', 
-                  isOnline ? 'Online' : 'Offline', 
+                  'Connection',
+                  isOnline ? 'Online' : 'Offline',
                   isOnline ? Icons.cloud_done : Icons.cloud_off,
                 ),
                 const SizedBox(height: 12),
                 _buildInfoRow(
-                  'Last Sync', 
-                  data['lastSyncTime']?.toString() ?? 'Never', 
+                  'Last Sync',
+                  data['lastSyncTime']?.toString() ?? 'Never',
                   Icons.access_time,
                 ),
               ],
@@ -184,20 +183,11 @@ class SyncStatusScreen extends ConsumerWidget {
       children: [
         Icon(icon, color: Colors.grey),
         const SizedBox(width: 12),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 14, color: Colors.grey)),
         const Spacer(),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ],
     );

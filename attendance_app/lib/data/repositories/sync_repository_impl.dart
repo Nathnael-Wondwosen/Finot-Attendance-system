@@ -13,7 +13,12 @@ class SyncRepositoryImpl implements SyncRepository {
   final ClassRepository _classRepository;
   final StudentRepository _studentRepository;
 
-  SyncRepositoryImpl(this._localDataSource, this._remoteDataSource, this._classRepository, this._studentRepository);
+  SyncRepositoryImpl(
+    this._localDataSource,
+    this._remoteDataSource,
+    this._classRepository,
+    this._studentRepository,
+  );
 
   @override
   Future<void> syncData() async {
@@ -22,7 +27,7 @@ class SyncRepositoryImpl implements SyncRepository {
       // For now, it's a placeholder
     } catch (e) {
       print('Error syncing data: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -42,15 +47,32 @@ class SyncRepositoryImpl implements SyncRepository {
     return 0;
   }
 
-  // Additional methods for the attendance sync functionality
+  @override
   Future<bool> downloadClassData(String classId) async {
     try {
-      // Get students for this class from remote
-      final remoteStudents = await _remoteDataSource.fetchStudentsByClass(classId);
-      
+      // Convert classId to int for the API call
+      final intClassId = int.tryParse(classId) ?? 0;
+      print('Downloading data for class ID: $intClassId');
+
+      // Get students for this class from remote using the proper endpoint
+      final remoteStudents = await _remoteDataSource.fetchStudentsByClass(
+        intClassId,
+      );
+
+      print(
+        'Fetched ${remoteStudents.length} students from remote for class $intClassId',
+      );
+
       // Save students to local storage
-      await _studentRepository.saveStudents(remoteStudents);
-      
+      if (remoteStudents.isNotEmpty) {
+        await _studentRepository.saveStudents(remoteStudents);
+        print(
+          'Saved ${remoteStudents.length} students to local storage for class $intClassId',
+        );
+      } else {
+        print('No students fetched for class $intClassId, not saving any data');
+      }
+
       return true;
     } catch (e) {
       print('Error downloading class data: $e');
@@ -58,25 +80,77 @@ class SyncRepositoryImpl implements SyncRepository {
     }
   }
 
+  @override
   Future<bool> downloadAllClasses() async {
     try {
       // Get all classes from remote
       final remoteClasses = await _remoteDataSource.fetchClasses();
-      
+      print('Fetched ${remoteClasses.length} classes from remote');
+
       // Save classes to local storage
       await _classRepository.saveClasses(remoteClasses);
-      
-      // For each class, get its students
+
+      // For each class, get its specific students
       for (final classEntity in remoteClasses) {
         try {
-          final remoteStudents = await _remoteDataSource.fetchStudentsByClass(classEntity.serverId.toString());
-          await _studentRepository.saveStudents(remoteStudents);
+          print(
+            'Fetching students for class ${classEntity.name} (ID: ${classEntity.serverId})',
+          );
+
+          // Fetch students specifically for this class
+          final remoteStudents = await _remoteDataSource.fetchStudentsByClass(
+            classEntity.serverId ?? 0,
+          );
+
+          print(
+            'Fetched ${remoteStudents.length} students for class ${classEntity.name}',
+          );
+
+          if (remoteStudents.isNotEmpty) {
+            // Update the students to have the correct classId before saving
+            final studentsWithClassId =
+                remoteStudents
+                    .map(
+                      (student) => StudentEntity(
+                        id: student.id,
+                        serverId: student.serverId,
+                        name: student.name,
+                        christianName: student.christianName,
+                        gender: student.gender,
+                        currentGrade: student.currentGrade,
+                        photoPath: student.photoPath,
+                        phoneNumber: student.phoneNumber,
+                        fatherFullName: student.fatherFullName,
+                        fatherPhone: student.fatherPhone,
+                        motherFullName: student.motherFullName,
+                        motherPhone: student.motherPhone,
+                        guardianFullName: student.guardianFullName,
+                        guardianPhone: student.guardianPhone,
+                        sourceType: student.sourceType,
+                        rollNumber: student.rollNumber,
+                        classId:
+                            classEntity.serverId ??
+                            0, // Set the correct classId
+                        sectionId: student.sectionId,
+                        createdAt: student.createdAt,
+                        updatedAt: student.updatedAt,
+                      ),
+                    )
+                    .toList();
+
+            await _studentRepository.saveStudents(studentsWithClassId);
+            print(
+              'Saved ${studentsWithClassId.length} students for class ${classEntity.name}',
+            );
+          } else {
+            print('No students found for class ${classEntity.name}');
+          }
         } catch (e) {
           print('Error downloading students for class ${classEntity.name}: $e');
           // Continue with other classes even if one fails
         }
       }
-      
+
       return true;
     } catch (e) {
       print('Error downloading all classes: $e');
@@ -84,6 +158,7 @@ class SyncRepositoryImpl implements SyncRepository {
     }
   }
 
+  @override
   Future<bool> uploadAttendanceData() async {
     try {
       // Get unsynced attendance records from local storage
@@ -96,11 +171,22 @@ class SyncRepositoryImpl implements SyncRepository {
     }
   }
 
+  @override
   Future<bool> isOnline() async {
     try {
       return await _remoteDataSource.testConnection();
     } catch (e) {
       return false;
+    }
+  }
+
+  @override
+  Future<void> clearLocalData() async {
+    try {
+      await _localDataSource.clearAllData();
+    } catch (e) {
+      print('Error clearing local data: $e');
+      rethrow;
     }
   }
 }

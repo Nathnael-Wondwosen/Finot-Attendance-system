@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants.dart';
 
 class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -87,10 +89,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: Colors.blue.shade100,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            color: Colors.blue,
-          ),
+          child: Icon(icon, color: Colors.blue),
         ),
         title: Text(title),
         subtitle: Text(subtitle),

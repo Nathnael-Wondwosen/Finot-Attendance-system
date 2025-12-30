@@ -3,6 +3,8 @@ import '../../core/constants.dart';
 import '../../core/ui_components.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
@@ -38,7 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -48,7 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-
                   /// ---------------- HEADER ----------------
                   Container(
                     padding: const EdgeInsets.symmetric(vertical: 32),
@@ -123,10 +124,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             hint: 'admin@example.com or 123456789',
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            validator: (value) =>
-                                value == null || value.isEmpty
-                                    ? 'Please enter your email or phone'
-                                    : null,
+                            validator:
+                                (value) =>
+                                    value == null || value.isEmpty
+                                        ? 'Please enter your email or phone'
+                                        : null,
                           ),
                           const SizedBox(height: 16),
                           CustomTextField(
@@ -134,10 +136,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             hint: 'Enter any password',
                             controller: _passwordController,
                             obscureText: true,
-                            validator: (value) =>
-                                value == null || value.isEmpty
-                                    ? 'Please enter your password'
-                                    : null,
+                            validator:
+                                (value) =>
+                                    value == null || value.isEmpty
+                                        ? 'Please enter your password'
+                                        : null,
                           ),
                           const SizedBox(height: 24),
 
@@ -145,14 +148,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           SizedBox(
                             width: double.infinity,
                             height: 52,
-                            child: _isLoading
-                                ? const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
-                                : CustomButton(
-                                    text: 'Login',
-                                    onPressed: _login,
-                                  ),
+                            child:
+                                _isLoading
+                                    ? const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
+                                    : CustomButton(
+                                      text: 'Login',
+                                      onPressed: _login,
+                                    ),
                           ),
                         ],
                       ),
@@ -165,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceVariant,
+                      color: theme.colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(16),
                       border: Border(
                         left: BorderSide(
@@ -187,12 +191,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(height: 10),
                         Row(
                           children: [
-                            Expanded(
-                              child: Text('Email:\nadmin@example.com'),
-                            ),
-                            Expanded(
-                              child: Text('Phone:\n123456789'),
-                            ),
+                            Expanded(child: Text('Email:\nadmin@example.com')),
+                            Expanded(child: Text('Phone:\n123456789')),
                           ],
                         ),
                         SizedBox(height: 10),
@@ -214,7 +214,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   /// ---------------- OFFLINE MODE ----------------
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: theme.cardColor,
                       borderRadius: BorderRadius.circular(14),
@@ -225,9 +227,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Row(
                       children: [
                         Icon(
-                          _offlineMode
-                              ? Icons.cloud_off
-                              : Icons.cloud_done,
+                          _offlineMode ? Icons.cloud_off : Icons.cloud_done,
                           color: theme.colorScheme.primary,
                         ),
                         const SizedBox(width: 12),
@@ -236,9 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             _offlineMode
                                 ? 'Offline Mode Enabled'
                                 : 'Online Authentication',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                         ),
                         Switch(

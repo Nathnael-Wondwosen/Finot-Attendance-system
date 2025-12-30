@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme.dart';
 import '../../core/ui_components.dart';
 import '../providers/theme_provider.dart';
+import '../../core/sync_service.dart';
+import '../providers/app_provider.dart';
 
-class ThemeSettingsScreen extends ConsumerWidget {
+class ThemeSettingsScreen extends ConsumerStatefulWidget {
+  const ThemeSettingsScreen({super.key});
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ThemeSettingsScreen> createState() =>
+      _ThemeSettingsScreenState();
+}
+
+class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final themeState = ref.watch(themeStateProvider);
-    
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Theme Settings'),
+        title: const Text('Settings'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -20,57 +31,130 @@ class ThemeSettingsScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Theme Mode',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              'Theme Settings',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildThemeModeSelector(themeState, ref),
-            const SizedBox(height: 32),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Primary Color'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildColorOption(
+                          themeState.primaryColor,
+                          AppTheme.primaryColor,
+                          'Blue',
+                        ),
+                        const SizedBox(width: 8),
+                        _buildColorOption(
+                          themeState.primaryColor,
+                          Colors.green,
+                          'Green',
+                        ),
+                        const SizedBox(width: 8),
+                        _buildColorOption(
+                          themeState.primaryColor,
+                          Colors.purple,
+                          'Purple',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Accent Color'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildColorOption(
+                          themeState.accentColor,
+                          AppTheme.secondaryColor,
+                          'Blue',
+                        ),
+                        const SizedBox(width: 8),
+                        _buildColorOption(
+                          themeState.accentColor,
+                          Colors.green,
+                          'Green',
+                        ),
+                        const SizedBox(width: 8),
+                        _buildColorOption(
+                          themeState.accentColor,
+                          Colors.purple,
+                          'Purple',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Theme Mode'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildThemeModeOption(ThemeMode.light, 'Light'),
+                        const SizedBox(width: 8),
+                        _buildThemeModeOption(ThemeMode.dark, 'Dark'),
+                        const SizedBox(width: 8),
+                        _buildThemeModeOption(ThemeMode.system, 'System'),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('Density'),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildDensityOption(-1, 'Compact'),
+                        const SizedBox(width: 8),
+                        _buildDensityOption(0, 'Normal'),
+                        const SizedBox(width: 8),
+                        _buildDensityOption(1, 'Expanded'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             const Text(
-              'Primary Color',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              'Data Management',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildColorSelector(
-              themeState.primaryColor,
-              'Primary',
-              (color) => ref.read(themeStateProvider.notifier).updatePrimaryColor(color),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'Accent Color',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Clear Local Data',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'This will remove all downloaded classes and student data from your device. You can re-download them when needed.',
+                      style: TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _clearLocalData,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Clear All Data'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            _buildColorSelector(
-              themeState.accentColor,
-              'Accent',
-              (color) => ref.read(themeStateProvider.notifier).updateAccentColor(color),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'App Density',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildDensitySelector(themeState, ref),
-            const SizedBox(height: 32),
-            CustomButton(
-              text: 'Reset to Default',
-              onPressed: () => ref.read(themeStateProvider.notifier).resetToDefault(),
-              isOutlined: true,
             ),
           ],
         ),
@@ -78,133 +162,162 @@ class ThemeSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildThemeModeSelector(ThemeState themeState, WidgetRef ref) {
-    return SegmentedButton<ThemeMode>(
-      segments: const [
-        ButtonSegment(
-          value: ThemeMode.light,
-          label: Text('Light'),
-          icon: Icon(Icons.light_mode),
-        ),
-        ButtonSegment(
-          value: ThemeMode.dark,
-          label: Text('Dark'),
-          icon: Icon(Icons.dark_mode),
-        ),
-        ButtonSegment(
-          value: ThemeMode.system,
-          label: Text('System'),
-          icon: Icon(Icons.settings),
-        ),
-      ],
-      selected: {themeState.themeMode},
-      onSelectionChanged: (Set<ThemeMode> newSelection) {
-        if (newSelection.isNotEmpty) {
-          ref.read(themeStateProvider.notifier).updateThemeMode(newSelection.first);
-        }
-      },
-    );
-  }
-
-  Widget _buildColorSelector(Color currentColor, String label, Function(Color) onColorChanged) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: currentColor,
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(12),
+  Widget _buildColorOption(
+    Color currentColor,
+    Color optionColor,
+    String label,
+  ) {
+    return Expanded(
+      child: InkWell(
+        onTap: () => _updateColor(optionColor),
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: optionColor,
+            border: Border.all(
+              color:
+                  currentColor == optionColor
+                      ? Colors.black
+                      : Colors.transparent,
+              width: 2,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Current $label Color',
-                style: const TextStyle(
-                  fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThemeModeOption(ThemeMode mode, String label) {
+    final themeState = ref.watch(themeStateProvider);
+    final isSelected = themeState.themeMode == mode;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => _updateThemeMode(mode),
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDensityOption(int density, String label) {
+    final themeState = ref.watch(themeStateProvider);
+    final isSelected = themeState.density == density;
+
+    return Expanded(
+      child: InkWell(
+        onTap: () => _updateDensity(density),
+        child: Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _updateColor(Color color) {
+    ref.read(themeStateProvider.notifier).updatePrimaryColor(color);
+  }
+
+  void _updateThemeMode(ThemeMode mode) {
+    ref.read(themeStateProvider.notifier).updateThemeMode(mode);
+  }
+
+  void _updateDensity(int density) {
+    ref.read(themeStateProvider.notifier).updateDensity(density);
+  }
+
+  Future<void> _clearLocalData() async {
+    final syncService = ref.read(syncServiceProvider);
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Clear Local Data'),
+            content: const Text(
+              'Are you sure you want to clear all downloaded data? This will remove all classes and students from your device. You can re-download them later when needed.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Clear Data',
+                  style: TextStyle(color: Colors.red),
                 ),
               ),
-            ),
-          ),
-          PopupMenuButton<Color>(
-            itemBuilder: (context) => [
-              _buildColorItem(Colors.red, 'Red'),
-              _buildColorItem(Colors.blue, 'Blue'),
-              _buildColorItem(Colors.green, 'Green'),
-              _buildColorItem(Colors.purple, 'Purple'),
-              _buildColorItem(Colors.orange, 'Orange'),
-              _buildColorItem(Colors.pink, 'Pink'),
-              _buildColorItem(Colors.indigo, 'Indigo'),
-              _buildColorItem(Colors.teal, 'Teal'),
             ],
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text('Change'),
-            ),
-            onSelected: (Color color) => onColorChanged(color),
           ),
-        ],
-      ),
     );
-  }
 
-  PopupMenuEntry<Color> _buildColorItem(Color color, String label) {
-    return PopupMenuItem(
-      value: color,
-      child: Row(
-        children: [
-          Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
+    if (confirmed == true) {
+      try {
+        final success = await syncService.clearLocalData();
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Local data cleared successfully!'),
+              backgroundColor: Colors.green,
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(label),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDensitySelector(ThemeState themeState, WidgetRef ref) {
-    return SegmentedButton<int>(
-      segments: const [
-        ButtonSegment(
-          value: -1,
-          label: Text('Compact'),
-        ),
-        ButtonSegment(
-          value: 0,
-          label: Text('Normal'),
-        ),
-        ButtonSegment(
-          value: 1,
-          label: Text('Expanded'),
-        ),
-      ],
-      selected: {themeState.density},
-      onSelectionChanged: (Set<int> newSelection) {
-        if (newSelection.isNotEmpty) {
-          ref.read(themeStateProvider.notifier).updateDensity(newSelection.first);
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to clear local data'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
-      },
-    );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error clearing local data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

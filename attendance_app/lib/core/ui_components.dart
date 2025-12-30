@@ -11,19 +11,19 @@ class CustomButton extends StatelessWidget {
   final double? width;
 
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.style,
     this.isOutlined = false,
     this.icon,
     this.width,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     Widget button;
-    
+
     if (isOutlined) {
       button = OutlinedButton.icon(
         onPressed: onPressed,
@@ -39,11 +39,11 @@ class CustomButton extends StatelessWidget {
         style: style,
       );
     }
-    
+
     if (width != null) {
       return SizedBox(width: width, child: button);
     }
-    
+
     return button;
   }
 }
@@ -58,7 +58,7 @@ class CustomCard extends StatelessWidget {
   final bool isResponsive;
 
   const CustomCard({
-    Key? key,
+    super.key,
     required this.child,
     this.padding,
     this.color,
@@ -66,31 +66,29 @@ class CustomCard extends StatelessWidget {
     this.onTap,
     this.shape,
     this.isResponsive = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    EdgeInsets effectivePadding = padding ??
+    EdgeInsets effectivePadding =
+        padding ??
         (isResponsive
             ? EdgeInsets.symmetric(
-                horizontal: ScreenSize.isSmallScreen(context) ? 12.0 : 16.0,
-                vertical: ScreenSize.isSmallScreen(context) ? 12.0 : 16.0,
-              )
+              horizontal: ScreenSize.isSmallScreen(context) ? 12.0 : 16.0,
+              vertical: ScreenSize.isSmallScreen(context) ? 12.0 : 16.0,
+            )
             : const EdgeInsets.all(16.0));
-    
+
     return Card(
       color: color,
       elevation: elevation ?? 2,
-      shape: shape ?? RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape:
+          shape ??
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: Padding(
-          padding: effectivePadding,
-          child: child,
-        ),
+        child: Padding(padding: effectivePadding, child: child),
       ),
     );
   }
@@ -108,7 +106,7 @@ class CustomTextField extends StatelessWidget {
   final Widget? suffixIcon;
 
   const CustomTextField({
-    Key? key,
+    super.key,
     required this.label,
     this.hint,
     this.controller,
@@ -118,7 +116,7 @@ class CustomTextField extends StatelessWidget {
     this.obscureText = false,
     this.prefixIcon,
     this.suffixIcon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -144,16 +142,17 @@ class CustomTextField extends StatelessWidget {
             hintText: hint,
             prefixIcon: prefixIcon,
             suffixIcon: suffixIcon,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Colors.grey),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+              borderSide: const BorderSide(
+                color: AppTheme.primaryColor,
+                width: 2,
+              ),
             ),
           ),
         ),
@@ -170,13 +169,13 @@ class StatusChip extends StatelessWidget {
   final double? fontSize;
 
   const StatusChip({
-    Key? key,
+    super.key,
     required this.text,
     required this.color,
     this.textColor,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     this.fontSize,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -205,11 +204,11 @@ class ResponsiveWidget extends StatelessWidget {
   final Widget desktop;
 
   const ResponsiveWidget({
-    Key? key,
+    super.key,
     required this.mobile,
     this.tablet,
     required this.desktop,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
