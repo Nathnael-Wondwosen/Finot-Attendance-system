@@ -11,26 +11,40 @@ class ClassRepositoryImpl implements ClassRepository {
   @override
   Future<List<ClassEntity>> getClasses() async {
     final classModels = await _localDataSource.getClasses();
-    return classModels.map((model) => ClassEntity(
-      id: int.tryParse(model.id ?? '0'), // Convert String id to int
-      serverId: int.tryParse(model.id ?? '0'), // Use the same value for serverId
-      name: model.name,
-      createdAt: model.createdAt.toIso8601String(),
-      updatedAt: model.updatedAt.toIso8601String(),
-    )).toList();
+    return classModels
+        .map(
+          (model) => ClassEntity(
+            id: model.id,
+            serverId: model.serverId,
+            name: model.name,
+            createdAt: model.createdAt?.toIso8601String(),
+            updatedAt: model.updatedAt?.toIso8601String(),
+          ),
+        )
+        .toList();
   }
 
   @override
   Future<void> saveClasses(List<ClassEntity> classes) async {
-    final classModels = classes.map((entity) => ClassModel(
-      id: entity.serverId?.toString() ?? entity.id?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      name: entity.name,
-      teacherName: null, // Not in entity
-      academicYear: DateTime.now().year, // Default value
-      createdAt: DateTime.parse(entity.createdAt ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(entity.updatedAt ?? DateTime.now().toIso8601String()),
-    )).toList();
-    
+    final classModels =
+        classes
+            .map(
+              (entity) => ClassModel(
+                id: entity.id,
+                serverId: entity.serverId,
+                name: entity.name,
+                createdAt:
+                    entity.createdAt != null
+                        ? DateTime.parse(entity.createdAt!)
+                        : null,
+                updatedAt:
+                    entity.updatedAt != null
+                        ? DateTime.parse(entity.updatedAt!)
+                        : null,
+              ),
+            )
+            .toList();
+
     for (final model in classModels) {
       await _localDataSource.insertClass(model);
     }

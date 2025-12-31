@@ -10,23 +10,14 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
 
   @override
   Future<List<AttendanceEntity>> getAttendanceByDate(String date) async {
-    // This method doesn't exist in our LocalDataSource
-    // For now, return all attendance records
-    final attendanceModels = await _localDataSource.getUnsyncedAttendance();
+    final attendanceModels = await _localDataSource.getAttendanceByDate(date);
     return attendanceModels.map((model) {
-      // Convert String classId to int if possible
-      int classIdAsInt;
-      try {
-        classIdAsInt = int.parse(model.classId);
-      } catch (e) {
-        classIdAsInt = 0; // Default to 0 if conversion fails
-      }
-      
       return AttendanceEntity(
         id: model.id,
         studentId: model.studentId,
-        classId: classIdAsInt,
-        sectionId: 0, // Not in our schema
+        classId: model.classId,
+        className: model.className,
+        sectionId: model.sectionId,
         date: model.date.toIso8601String(),
         status: model.status,
         synced: model.synced ? 1 : 0,
@@ -37,55 +28,91 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   }
 
   @override
-  Future<List<AttendanceEntity>> getAttendanceByClassSectionDate(int classId, int sectionId, String date) async {
-    // This method doesn't exist in our LocalDataSource
-    // For now, return all attendance records
-    return await getAttendanceByDate(date);
+  Future<List<AttendanceEntity>> getAttendanceByClassSectionDate(
+    int classId,
+    int sectionId,
+    String date,
+  ) async {
+    final attendanceModels = await _localDataSource
+        .getAttendanceByClassIdAndDate(classId, date);
+    return attendanceModels.map((model) {
+      return AttendanceEntity(
+        id: model.id,
+        studentId: model.studentId,
+        classId: model.classId,
+        className: model.className,
+        sectionId: model.sectionId,
+        date: model.date.toIso8601String(),
+        status: model.status,
+        synced: model.synced ? 1 : 0,
+        createdAt: model.createdAt.toIso8601String(),
+        updatedAt: model.updatedAt.toIso8601String(),
+      );
+    }).toList();
   }
 
   @override
   Future<void> saveAttendance(AttendanceEntity attendance) async {
     // Convert AttendanceEntity to AttendanceModel and save
-    String classId = attendance.classId.toString();
-    
     final model = AttendanceModel(
       id: attendance.id ?? 0,
       studentId: attendance.studentId,
-      classId: classId,
+      classId: attendance.classId,
+      className: attendance.className,
+      sectionId: attendance.sectionId,
       date: DateTime.parse(attendance.date),
       status: attendance.status,
       notes: null, // Not in entity
-      createdAt: DateTime.parse(attendance.createdAt ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(attendance.updatedAt ?? DateTime.now().toIso8601String()),
+      createdAt:
+          attendance.createdAt != null
+              ? DateTime.parse(attendance.createdAt!)
+              : DateTime.now(),
+      updatedAt:
+          attendance.updatedAt != null
+              ? DateTime.parse(attendance.updatedAt!)
+              : DateTime.now(),
       synced: attendance.synced == 1,
     );
-    
+
     await _localDataSource.insertAttendance(model);
   }
 
   @override
   Future<void> updateAttendance(AttendanceEntity attendance) async {
-    // For now, just save it again (replace)
-    await saveAttendance(attendance);
+    // Convert AttendanceEntity to AttendanceModel and update
+    final model = AttendanceModel(
+      id: attendance.id ?? 0,
+      studentId: attendance.studentId,
+      classId: attendance.classId,
+      className: attendance.className,
+      sectionId: attendance.sectionId,
+      date: DateTime.parse(attendance.date),
+      status: attendance.status,
+      notes: null, // Not in entity
+      createdAt:
+          attendance.createdAt != null
+              ? DateTime.parse(attendance.createdAt!)
+              : DateTime.now(),
+      updatedAt:
+          attendance.updatedAt != null
+              ? DateTime.parse(attendance.updatedAt!)
+              : DateTime.now(),
+      synced: attendance.synced == 1,
+    );
+
+    await _localDataSource.updateAttendance(model);
   }
 
   @override
   Future<List<AttendanceEntity>> getUnsyncedAttendance() async {
     final attendanceModels = await _localDataSource.getUnsyncedAttendance();
     return attendanceModels.map((model) {
-      // Convert String classId to int if possible
-      int classIdAsInt;
-      try {
-        classIdAsInt = int.parse(model.classId);
-      } catch (e) {
-        classIdAsInt = 0; // Default to 0 if conversion fails
-      }
-      
       return AttendanceEntity(
         id: model.id,
         studentId: model.studentId,
-        classId: classIdAsInt,
-        sectionId: 0, // Not in our schema
+        classId: model.classId,
+        className: model.className,
+        sectionId: model.sectionId,
         date: model.date.toIso8601String(),
         status: model.status,
         synced: model.synced ? 1 : 0,
@@ -98,6 +125,25 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
   @override
   Future<void> markAttendanceAsSynced(int attendanceId) async {
     await _localDataSource.updateAttendanceSyncStatus(attendanceId, true);
+  }
+
+  @override
+  Future<List<AttendanceEntity>> getAllAttendance() async {
+    final attendanceModels = await _localDataSource.getAllAttendance();
+    return attendanceModels.map((model) {
+      return AttendanceEntity(
+        id: model.id,
+        studentId: model.studentId,
+        classId: model.classId,
+        className: model.className,
+        sectionId: model.sectionId,
+        date: model.date.toIso8601String(),
+        status: model.status,
+        synced: model.synced ? 1 : 0,
+        createdAt: model.createdAt.toIso8601String(),
+        updatedAt: model.updatedAt.toIso8601String(),
+      );
+    }).toList();
   }
 
   @override

@@ -4,7 +4,9 @@ import '../../core/ui_components.dart';
 import '../../core/typography.dart';
 import '../../core/responsive_layout.dart';
 import '../../domain/entities/student_entity.dart';
+import '../../domain/entities/attendance_entity.dart';
 import '../../domain/repositories/student_repository.dart';
+import '../../domain/repositories/attendance_repository.dart';
 import '../providers/app_provider.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
@@ -191,8 +193,34 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     final lateCount =
         _attendanceStatus.values.where((status) => status == 'late').length;
 
-    // In a real implementation, you would save this to a local database
-    // For now, we'll just show a success message
+    // Save attendance records to the database
+    final attendanceRepository = ref.read(attendanceRepositoryProvider);
+
+    for (final entry in _attendanceStatus.entries) {
+      final studentId = entry.key;
+      final status = entry.value;
+
+      // Find the student entity to get the class name
+      final student = _students.firstWhere(
+        (s) => s.id == studentId,
+        orElse: () => _students.first,
+      );
+
+      final attendanceEntity = AttendanceEntity(
+        studentId: studentId ?? 0,
+        classId: int.tryParse(_selectedClassId) ?? 0,
+        className: _selectedClassName,
+        status: status,
+        date: _selectedDate.toIso8601String(),
+        synced: 0,
+        createdAt: DateTime.now().toIso8601String(),
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+
+      await attendanceRepository.saveAttendance(attendanceEntity);
+    }
+
+    // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -206,7 +234,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     // Wait a moment to show the success message, then navigate to the attendance summary tab
     await Future.delayed(const Duration(milliseconds: 1500));
 
-    // Navigate back and then to the attendance summary tab
+    // Navigate back to the main screen and select the attendance tab
     if (Navigator.of(context).canPop()) {
       Navigator.of(context).pop(); // Go back to the class students screen
       if (Navigator.of(context).canPop()) {
@@ -214,36 +242,18 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       }
     }
 
-    // Find the MainScreen in the widget tree and update its selected index
-    final mainScaffold = Scaffold.of(context);
-    if (mainScaffold != null) {
-      // Show a message to inform the user to go to the attendance tab
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Attendance saved! Switching to Attendance Summary tab...',
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+    // After navigating back, show a message to guide the user to the attendance summary
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Attendance saved successfully! Go to the Attendance tab to view the summary.',
           ),
-        );
-
-        // Add a delay before switching to the attendance tab
-        Future.delayed(const Duration(seconds: 2)).then((_) {
-          // Since we can't directly access the MainScreen state from here,
-          // we'll just show a message and let the user navigate manually
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Please go to the Attendance tab to view the summary.',
-              ),
-              backgroundColor: Colors.blue,
-            ),
-          );
-        });
-      });
-    }
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    });
   }
 
   @override

@@ -53,9 +53,7 @@ class StudentRepositoryImpl implements StudentRepository {
   @override
   Future<List<StudentEntity>> getStudentsByClass(int classId) async {
     print('Getting students for class ID: $classId');
-    final studentModels = await _localDataSource.getStudentsByClass(
-      classId.toString(),
-    );
+    final studentModels = await _localDataSource.getStudentsByClass(classId);
     final entities =
         studentModels
             .map(

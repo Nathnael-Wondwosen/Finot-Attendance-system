@@ -1,7 +1,9 @@
 class AttendanceModel {
   final int id;
   final int studentId;
-  final String classId;  // Changed to String to match database schema
+  final int classId; // Changed to int to match database schema
+  final String? className;
+  final int sectionId;
   final DateTime date;
   final String status; // 'present', 'absent', 'late'
   final String? notes;
@@ -13,6 +15,8 @@ class AttendanceModel {
     required this.id,
     required this.studentId,
     required this.classId,
+    this.className,
+    this.sectionId = 0,
     required this.date,
     required this.status,
     this.notes,
@@ -26,6 +30,8 @@ class AttendanceModel {
       'id': id,
       'student_id': studentId,
       'class_id': classId,
+      'class_name': className,
+      'section_id': sectionId,
       'date': date.toIso8601String(),
       'status': status,
       'notes': notes,
@@ -39,7 +45,9 @@ class AttendanceModel {
     return AttendanceModel(
       id: map['id']?.toInt() ?? 0,
       studentId: map['student_id']?.toInt() ?? 0,
-      classId: map['class_id'] ?? '',
+      classId: map['class_id']?.toInt() ?? 0,
+      className: map['class_name'],
+      sectionId: map['section_id']?.toInt() ?? 0,
       date: DateTime.parse(map['date']),
       status: map['status'] ?? 'present',
       notes: map['notes'],
@@ -52,7 +60,8 @@ class AttendanceModel {
   AttendanceModel copyWith({
     int? id,
     int? studentId,
-    String? classId,
+    int? classId,
+    int? sectionId,
     DateTime? date,
     String? status,
     String? notes,
@@ -64,6 +73,7 @@ class AttendanceModel {
       id: id ?? this.id,
       studentId: studentId ?? this.studentId,
       classId: classId ?? this.classId,
+      sectionId: sectionId ?? this.sectionId,
       date: date ?? this.date,
       status: status ?? this.status,
       notes: notes ?? this.notes,
