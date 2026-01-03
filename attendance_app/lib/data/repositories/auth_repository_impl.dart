@@ -1,12 +1,10 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../datasources/remote_data_source.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final RemoteDataSource _remoteDataSource;
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
-  AuthRepositoryImpl(this._remoteDataSource);
+  AuthRepositoryImpl();
 
   @override
   Future<bool> login(String email, String password) async {
@@ -15,7 +13,10 @@ class AuthRepositoryImpl implements AuthRepository {
       // In a real implementation, you would call the actual API
       await _secureStorage.write(key: 'auth_token', value: 'demo_token');
       await _secureStorage.write(key: 'is_logged_in', value: 'true');
-      await _secureStorage.write(key: 'user_data', value: '{"email": "$email", "name": "Demo User"}');
+      await _secureStorage.write(
+        key: 'user_data',
+        value: '{"email": "$email", "name": "Demo User"}',
+      );
       return true;
     } catch (e) {
       throw Exception('Login failed: $e');
@@ -49,7 +50,10 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<bool> saveUserData(Map<String, dynamic> userData) async {
     try {
-      await _secureStorage.write(key: 'user_data', value: _encodeMapToString(userData));
+      await _secureStorage.write(
+        key: 'user_data',
+        value: _encodeMapToString(userData),
+      );
       return true;
     } catch (e) {
       return false;
@@ -64,19 +68,15 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     return null;
   }
-  
+
   String _encodeMapToString(Map<String, dynamic> map) {
     // Simple implementation - in a real app you'd use proper JSON serialization
     return map.toString();
   }
-  
+
   Map<String, dynamic> _decodeStringToMap(String str) {
     // Simple implementation - in a real app you'd use proper JSON parsing
     // For now, return a demo user data
-    return {
-      'email': 'demo@example.com',
-      'name': 'Demo User',
-      'role': 'admin'
-    };
+    return {'email': 'demo@example.com', 'name': 'Demo User', 'role': 'admin'};
   }
 }

@@ -1,363 +1,262 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../presentation/providers/theme_provider.dart';
 
+/// =======================================================
+/// TONAL PALETTE (LIKE ANDROID SETTINGS)
+/// =======================================================
+class TonalPalette {
+  final Color primary;
+  final Color onPrimary;
+  final Color surface;
+  final Color surfaceVariant;
+  final Color outline;
+
+  TonalPalette({
+    required this.primary,
+    required this.onPrimary,
+    required this.surface,
+    required this.surfaceVariant,
+    required this.outline,
+  });
+
+  factory TonalPalette.from(Color seed, double tone, Brightness brightness) {
+    final base = AppTheme.applyTone(seed, tone);
+
+    return TonalPalette(
+      primary: base,
+      onPrimary: brightness == Brightness.dark ? Colors.black : Colors.white,
+      surface:
+          brightness == Brightness.dark
+              ? AppTheme.applyTone(base, 0.28)
+              : AppTheme.applyTone(base, 1.85),
+      surfaceVariant:
+          brightness == Brightness.dark
+              ? AppTheme.applyTone(base, 0.20)
+              : AppTheme.applyTone(base, 1.55),
+      outline: AppTheme.applyTone(base, 0.75),
+    );
+  }
+}
+
 class AppTheme {
+  /// =======================================================
+  /// BASE COLORS
+  /// =======================================================
   static const Color primaryColor = Color(0xFF2196F3);
-  static const Color secondaryColor = Color(0xFF03DAC6);
-  static const Color backgroundColor = Color(0xFFF5F7FA);
-  static const Color cardColor = Color(0xFFFFFFFF);
   static const Color errorColor = Color(0xFFE53935);
   static const Color successColor = Color(0xFF43A047);
   static const Color warningColor = Color(0xFFFFB300);
   static const Color infoColor = Color(0xFF1976D2);
 
-  // Amber color for emphasis as per user preferences
-  static const Color amberColor = Color(0xFFFFC107);
+  /// =======================================================
+  /// TONE ADJUSTMENT (KEY PART – MATCHES SAMPLE UI)
+  /// =======================================================
+  /// tone:
+  ///   0.6  → very light
+  ///   1.0  → natural
+  ///   1.2+ → darker / richer
+  static Color applyTone(Color color, double tone) {
+    final hsl = HSLColor.fromColor(color);
+    final lightness = (hsl.lightness * tone).clamp(0.12, 0.92);
+    return hsl.withLightness(lightness).toColor();
+  }
 
+  /// =======================================================
+  /// DEFAULT LIGHT THEME (STATIC)
+  /// =======================================================
   static ThemeData get lightTheme {
+    final tones = TonalPalette.from(primaryColor, 1.0, Brightness.light);
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        background: backgroundColor,
-        surface: cardColor,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: tones.surface,
+
+      colorScheme: ColorScheme(
+        brightness: Brightness.light,
+        primary: tones.primary,
+        onPrimary: tones.onPrimary,
+        secondary: tones.primary,
+        onSecondary: tones.onPrimary,
+        background: tones.surface,
+        onBackground: Colors.black87,
+        surface: tones.surface,
+        onSurface: Colors.black87,
+        surfaceVariant: tones.surfaceVariant,
+        outline: tones.outline,
+        error: errorColor,
+        onError: Colors.white,
       ),
+
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
       ),
+
+      cardTheme: CardTheme(
+        color: tones.surfaceVariant,
+        elevation: 1.5,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+
+      sliderTheme: SliderThemeData(
+        activeTrackColor: tones.primary,
+        thumbColor: tones.primary,
+        inactiveTrackColor: tones.outline.withOpacity(0.35),
+      ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.all(tones.primary),
+        trackColor: WidgetStateProperty.all(tones.primary.withOpacity(0.45)),
+      ),
+
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: tones.primary,
+          foregroundColor: tones.onPrimary,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
+
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: primaryColor,
-          side: const BorderSide(color: primaryColor),
+          foregroundColor: tones.primary,
+          side: BorderSide(color: tones.outline),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-        ),
-      ),
-      cardTheme: const CardTheme(
-        color: cardColor,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-      ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-        bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.black87),
-        labelLarge: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
         ),
       ),
     );
   }
 
+  /// =======================================================
+  /// DYNAMIC LIGHT THEME (COLOR PICKER + SLIDER)
+  /// =======================================================
   static ThemeData buildDynamicTheme(ThemeState themeState) {
+    final tones = TonalPalette.from(
+      themeState.primaryColor,
+      themeState.colorIntensity,
+      Brightness.light,
+    );
+
+    // Use background color based on theme mode
+    final backgroundColor =
+        themeState.themeMode == ThemeMode.dark
+            ? const Color(0xFF121212) // Dark background
+            : const Color(0xFFFFFFFF); // Light background
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: themeState.primaryColor,
-        background: themeState.backgroundColor,
-        surface: themeState.backgroundColor,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: backgroundColor,
+
+      colorScheme: ColorScheme(
+        brightness: Brightness.light,
+        primary: tones.primary,
+        onPrimary: tones.onPrimary,
+        secondary: tones.primary,
+        onSecondary: tones.onPrimary,
+        background: backgroundColor,
+        onBackground: Colors.black87,
+        surface: backgroundColor,
+        onSurface: Colors.black87,
+        surfaceVariant: tones.surfaceVariant,
+        outline: tones.outline,
+        error: errorColor,
+        onError: Colors.white,
       ),
-      primaryColor: themeState.primaryColor,
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
-          fontSize: 20 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: themeState.primaryColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: 24 * themeState.fontSizeScale,
-            vertical: 14 * themeState.fontSizeScale,
-          ),
-          textStyle: TextStyle(
-            fontSize: 16 * themeState.fontSizeScale,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: themeState.primaryColor,
-          side: BorderSide(color: themeState.primaryColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: 24 * themeState.fontSizeScale,
-            vertical: 14 * themeState.fontSizeScale,
-          ),
-          textStyle: TextStyle(
-            fontSize: 16 * themeState.fontSizeScale,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+
       cardTheme: CardTheme(
-        color: themeState.backgroundColor,
-        elevation: 2,
+        color: tones.surfaceVariant,
+        elevation: 1.5,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(themeState.cornerRadius + 4),
-          ),
+          borderRadius: BorderRadius.circular(themeState.cornerRadius + 6),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          borderSide: BorderSide(color: themeState.primaryColor, width: 2),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: 16 * themeState.fontSizeScale,
-          vertical: 14 * themeState.fontSizeScale,
-        ),
+
+      sliderTheme: SliderThemeData(
+        activeTrackColor: tones.primary,
+        thumbColor: tones.primary,
+        inactiveTrackColor: tones.outline.withOpacity(0.3),
       ),
-      textTheme: TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32 * themeState.fontSizeScale,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 24 * themeState.fontSizeScale,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 20 * themeState.fontSizeScale,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 18 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16 * themeState.fontSizeScale,
-          color: Colors.black87,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14 * themeState.fontSizeScale,
-          color: Colors.black87,
-        ),
-        labelLarge: TextStyle(
-          fontSize: 14 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
-        ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.all(tones.primary),
+        trackColor: WidgetStateProperty.all(tones.primary.withOpacity(0.45)),
+      ),
+
+      textTheme: ThemeData.light().textTheme.apply(
+        bodyColor: Colors.black87,
+        displayColor: Colors.black87,
       ),
     );
   }
 
+  /// =======================================================
+  /// DYNAMIC DARK THEME
+  /// =======================================================
   static ThemeData buildDynamicDarkTheme(ThemeState themeState) {
+    final tones = TonalPalette.from(
+      themeState.primaryColor,
+      themeState.colorIntensity,
+      Brightness.dark,
+    );
+
+    // Use background color based on theme mode
+    final backgroundColor =
+        themeState.themeMode == ThemeMode.dark
+            ? const Color(0xFF121212) // Dark background
+            : const Color(0xFFFFFFFF); // Light background
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: themeState.primaryColor,
+      scaffoldBackgroundColor: backgroundColor,
+
+      colorScheme: ColorScheme(
         brightness: Brightness.dark,
+        primary: tones.primary,
+        onPrimary: Colors.black,
+        secondary: tones.primary,
+        onSecondary: Colors.black,
+        background: backgroundColor,
+        onBackground: Colors.white,
+        surface: backgroundColor,
+        onSurface: Colors.white,
+        surfaceVariant: tones.surfaceVariant,
+        outline: tones.outline,
+        error: errorColor,
+        onError: Colors.black,
       ),
-      primaryColor: themeState.primaryColor,
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
-          fontSize: 20 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: themeState.primaryColor,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: 24 * themeState.fontSizeScale,
-            vertical: 14 * themeState.fontSizeScale,
-          ),
-          textStyle: TextStyle(
-            fontSize: 16 * themeState.fontSizeScale,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: themeState.primaryColor,
-          side: BorderSide(color: themeState.primaryColor),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          ),
-          padding: EdgeInsets.symmetric(
-            horizontal: 24 * themeState.fontSizeScale,
-            vertical: 14 * themeState.fontSizeScale,
-          ),
-          textStyle: TextStyle(
-            fontSize: 16 * themeState.fontSizeScale,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
+
       cardTheme: CardTheme(
-        color: Colors.grey[800],
-        elevation: 2,
+        color: tones.surfaceVariant,
+        elevation: 1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(
-            Radius.circular(themeState.cornerRadius + 4),
-          ),
+          borderRadius: BorderRadius.circular(themeState.cornerRadius + 6),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(themeState.cornerRadius),
-          borderSide: BorderSide(color: themeState.primaryColor, width: 2),
-        ),
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: 16 * themeState.fontSizeScale,
-          vertical: 14 * themeState.fontSizeScale,
-        ),
+
+      sliderTheme: SliderThemeData(
+        activeTrackColor: tones.primary,
+        thumbColor: tones.primary,
+        inactiveTrackColor: tones.outline.withOpacity(0.25),
       ),
-      textTheme: TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32 * themeState.fontSizeScale,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        headlineMedium: TextStyle(
-          fontSize: 24 * themeState.fontSizeScale,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        headlineSmall: TextStyle(
-          fontSize: 20 * themeState.fontSizeScale,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
-        titleLarge: TextStyle(
-          fontSize: 18 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        titleMedium: TextStyle(
-          fontSize: 16 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        bodyLarge: TextStyle(
-          fontSize: 16 * themeState.fontSizeScale,
-          color: Colors.white,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14 * themeState.fontSizeScale,
-          color: Colors.white,
-        ),
-        labelLarge: TextStyle(
-          fontSize: 14 * themeState.fontSizeScale,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
+
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.all(tones.primary),
+        trackColor: WidgetStateProperty.all(tones.primary.withOpacity(0.4)),
+      ),
+
+      textTheme: ThemeData.dark().textTheme.apply(
+        bodyColor: Colors.white,
+        displayColor: Colors.white,
       ),
     );
   }

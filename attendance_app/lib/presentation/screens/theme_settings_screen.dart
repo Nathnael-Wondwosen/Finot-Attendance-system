@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme.dart';
 import '../providers/theme_provider.dart';
 import 'dashboard_screen.dart';
 import 'class_selection_screen.dart';
@@ -113,25 +112,6 @@ class _ThemeSettingsScreenState extends ConsumerState<ThemeSettingsScreen> {
 
             // ===============================
             // BACKGROUND SETTINGS
-            // ===============================
-            _SectionLabel('Background'),
-            const SizedBox(height: 10),
-            _BackgroundSettings(
-              useGradient: theme.useGradientBackground,
-              backgroundColor: theme.backgroundColor,
-              onGradientChanged: (v) {
-                ref
-                    .read(themeStateProvider.notifier)
-                    .updateUseGradientBackground(v);
-              },
-              onBackgroundColorChanged: (color) {
-                ref
-                    .read(themeStateProvider.notifier)
-                    .updateBackgroundColor(color);
-              },
-            ),
-
-            const SizedBox(height: 18),
 
             // ===============================
             // DENSITY
@@ -331,8 +311,16 @@ class _AdvancedAppearanceCard extends StatelessWidget {
     required this.onIntensityChanged,
   });
 
+  // small helper to build sample shades for quick presets
+  List<double> _presetIntensities() => [0.55, 0.7, 0.85, 1.0];
+
   @override
   Widget build(BuildContext context) {
+    final shades =
+        _presetIntensities()
+            .map((s) => Color.lerp(Colors.white, primary, s) ?? primary)
+            .toList();
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: Container(
@@ -344,15 +332,22 @@ class _AdvancedAppearanceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // HEADER
+            // HEADER (preview circle + title)
             Row(
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: primary,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: primary.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -368,14 +363,24 @@ class _AdvancedAppearanceCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // SLIDER
-            Slider(
-              value: intensity,
-              min: 0.5,
-              max: 1.0,
-              divisions: 10,
-              activeColor: primary,
-              onChanged: onIntensityChanged,
+            // SLIDER with labels
+            Row(
+              children: [
+                const Icon(Icons.settings, size: 18, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Slider(
+                    value: intensity,
+                    min: 0.5,
+                    max: 1.0,
+                    divisions: 10,
+                    activeColor: primary,
+                    onChanged: onIntensityChanged,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.color_lens, size: 18, color: Colors.grey),
+              ],
             ),
 
             Align(
@@ -388,6 +393,60 @@ class _AdvancedAppearanceCard extends StatelessWidget {
                     : 'Vivid',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Quick presets row (small circular swatches)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children:
+                  shades.map((shade) {
+                    final isActive =
+                        (Color.lerp(Colors.white, primary, intensity)!.value ==
+                            shade.value);
+
+                    return GestureDetector(
+                      onTap: () {
+                        // determine the intensity used for this preset and call back
+                        final idx = shades.indexOf(shade);
+                        final presetValue = _presetIntensities()[idx];
+                        onIntensityChanged(presetValue);
+                      },
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: shade,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color:
+                                    isActive
+                                        ? Colors.black
+                                        : Colors.transparent,
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _presetIntensities()[shades.indexOf(shade)] < 0.65
+                                ? 'Soft'
+                                : _presetIntensities()[shades.indexOf(shade)] <
+                                    0.85
+                                ? 'Balanced'
+                                : 'Vivid',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
             ),
           ],
         ),
@@ -488,111 +547,6 @@ class _CornerRadiusSlider extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// =======================================================
-/// BACKGROUND SETTINGS
-/// =======================================================
-class _BackgroundSettings extends StatelessWidget {
-  final bool useGradient;
-  final Color backgroundColor;
-  final ValueChanged<bool> onGradientChanged;
-  final ValueChanged<Color> onBackgroundColorChanged;
-
-  const _BackgroundSettings({
-    required this.useGradient,
-    required this.backgroundColor,
-    required this.onGradientChanged,
-    required this.onBackgroundColorChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Background Settings',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            title: const Text('Use Gradient Background'),
-            value: useGradient,
-            onChanged: onGradientChanged,
-          ),
-          const SizedBox(height: 8),
-          const Text('Background Color:'),
-          const SizedBox(height: 8),
-          _ColorPicker(
-            selectedColor: backgroundColor,
-            onColorChanged: onBackgroundColorChanged,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// =======================================================
-/// COLOR PICKER
-/// =======================================================
-class _ColorPicker extends StatelessWidget {
-  final Color selectedColor;
-  final ValueChanged<Color> onColorChanged;
-
-  const _ColorPicker({
-    required this.selectedColor,
-    required this.onColorChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = [
-      Colors.grey.shade50,
-      Colors.blue.shade50,
-      Colors.green.shade50,
-      Colors.pink.shade50,
-      Colors.purple.shade50,
-      Colors.orange.shade50,
-      Colors.teal.shade50,
-      Colors.amber.shade50,
-    ];
-
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children:
-          colors.map((color) {
-            final isSelected = color.value == selectedColor.value;
-            return GestureDetector(
-              onTap: () => onColorChanged(color),
-              child: Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected ? Colors.black : Colors.grey,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child:
-                    isSelected
-                        ? const Icon(Icons.check, size: 16, color: Colors.white)
-                        : null,
-              ),
-            );
-          }).toList(),
     );
   }
 }

@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/ui_components.dart';
-import '../../core/typography.dart';
-import '../../core/responsive_layout.dart';
 import '../../domain/entities/class_entity.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../domain/entities/attendance_entity.dart';
-import '../../domain/repositories/attendance_repository.dart';
 import '../providers/app_provider.dart';
 
 class AttendanceSummaryScreen extends ConsumerStatefulWidget {

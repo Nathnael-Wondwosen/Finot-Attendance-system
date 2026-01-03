@@ -6,12 +6,6 @@ import '../../domain/entities/class_entity.dart';
 import '../../domain/entities/student_entity.dart';
 import '../providers/app_provider.dart';
 import 'attendance_screen.dart';
-import 'dashboard_screen.dart';
-import 'attendance_summary_screen.dart';
-import 'sync_status_screen.dart';
-import 'settings_screen.dart';
-import 'sidebar_drawer.dart';
-import '../../core/ui_components.dart';
 
 /// ===============================
 /// VIEW MODE ENUM
@@ -125,26 +119,6 @@ class _ClassSelectionScreenState extends ConsumerState<ClassSelectionScreen> {
     return _buildBody();
   }
 
-  AppBar _buildAppBar() {
-    return AppBar(
-      title: const Text('Select Class'),
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      actions: [
-        _viewIcon(Icons.view_list, ClassViewMode.compact),
-        _viewIcon(Icons.view_agenda, ClassViewMode.comfortable),
-        _viewIcon(Icons.grid_view, ClassViewMode.grid),
-      ],
-    );
-  }
-
-  Widget _viewIcon(IconData icon, ClassViewMode mode) {
-    return IconButton(
-      icon: Icon(icon, color: _viewMode == mode ? Colors.blue : Colors.grey),
-      onPressed: () => setState(() => _viewMode = mode),
-    );
-  }
-
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -170,7 +144,6 @@ class _ClassSelectionScreenState extends ConsumerState<ClassSelectionScreen> {
       case ClassViewMode.comfortable:
         return _buildListView(dense: false);
       case ClassViewMode.compact:
-      default:
         return _buildListView(dense: true);
     }
   }

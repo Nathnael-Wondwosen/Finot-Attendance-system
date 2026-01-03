@@ -3,11 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/app_provider.dart';
-import 'sidebar_drawer.dart';
-import 'dashboard_screen.dart';
-import 'class_selection_screen.dart';
-import 'attendance_summary_screen.dart';
-import 'settings_screen.dart';
 
 class SyncStatusScreen extends ConsumerWidget {
   const SyncStatusScreen({super.key});

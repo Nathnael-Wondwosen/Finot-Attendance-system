@@ -10,7 +10,6 @@ import 'attendance_summary_screen.dart';
 import 'sync_status_screen.dart';
 import 'settings_screen.dart';
 import 'sidebar_drawer.dart';
-import '../../core/ui_components.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? arguments;
@@ -29,7 +28,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   String _selectedClassId = '';
   String _selectedClassName = '';
   DateTime _selectedDate = DateTime.now();
-  String _searchQuery = '';
 
   @override
   void initState() {
@@ -138,7 +136,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   void _searchStudents(String query) {
     setState(() {
-      _searchQuery = query;
       if (query.isEmpty) {
         _filteredStudents = _students;
       } else {
@@ -180,14 +177,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     }
   }
 
-  void _markAll(String status) {
-    setState(() {
-      for (var student in _students) {
-        _attendanceStatus[student.id] = status;
-      }
-    });
-  }
-
   Future<void> _saveAttendance() async {
     final presentCount =
         _attendanceStatus.values.where((status) => status == 'present').length;
@@ -202,12 +191,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     for (final entry in _attendanceStatus.entries) {
       final studentId = entry.key;
       final status = entry.value;
-
-      // Find the student entity to get the class name
-      final student = _students.firstWhere(
-        (s) => s.id == studentId,
-        orElse: () => _students.first,
-      );
 
       final attendanceEntity = AttendanceEntity(
         studentId: studentId ?? 0,

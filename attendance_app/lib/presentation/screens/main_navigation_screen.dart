@@ -7,6 +7,7 @@ import 'attendance_summary_screen.dart';
 import 'sync_status_screen.dart';
 import 'settings_screen.dart';
 import 'sidebar_drawer.dart';
+import 'top_scaffold.dart';
 
 /// =======================================================
 /// MAIN NAVIGATION SCREEN
@@ -31,7 +32,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   /// SINGLE SOURCE OF TRUTH (SIDEBAR + TABS) - MODERN ICONS
   final List<NavigationItem> _navigationItems = const [
-    NavigationItem(title: 'Dashboard', icon: Icons.dashboard_rounded),
+    NavigationItem(title: 'Home', icon: Icons.dashboard_rounded),
     NavigationItem(title: 'Classes', icon: Icons.school_rounded),
     NavigationItem(title: 'Attendance', icon: Icons.check_circle_rounded),
     NavigationItem(title: 'Sync', icon: Icons.cloud_sync_rounded),
@@ -55,26 +56,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         final bool showSidebar = constraints.maxWidth >= 768;
 
         return Scaffold(
-          body: SidebarScaffold(
-            title: _navigationItems[_selectedIndex].title,
-            navigationItems: _navigationItems,
-            currentIndex: _selectedIndex,
-            primaryColor: primary,
-            onNavigationChanged: (index) {
-              setState(() => _selectedIndex = index);
-            },
-            child: IndexedStack(index: _selectedIndex, children: _screens),
-          ),
-
-          /// MOBILE FUTURISTIC BOTTOM NAV
-          bottomNavigationBar:
+          body:
               showSidebar
-                  ? null
-                  : FuturisticBottomTabs(
+                  ? SidebarScaffold(
+                    title: _navigationItems[_selectedIndex].title,
+                    navigationItems: _navigationItems,
                     currentIndex: _selectedIndex,
-                    onTap: (index) {
+                    primaryColor: primary,
+                    onNavigationChanged: (index) {
                       setState(() => _selectedIndex = index);
                     },
+                    child: IndexedStack(
+                      index: _selectedIndex,
+                      children: _screens,
+                    ),
+                  )
+                  : TopScaffold(
+                    title: _navigationItems[_selectedIndex].title,
+                    navigationItems: _navigationItems,
+                    currentIndex: _selectedIndex,
+                    primaryColor: primary,
+                    onNavigationChanged: (index) {
+                      setState(() => _selectedIndex = index);
+                    },
+                    child: IndexedStack(
+                      index: _selectedIndex,
+                      children: _screens,
+                    ),
                   ),
         );
       },
@@ -105,69 +113,40 @@ class FuturisticBottomTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final bottomInset = MediaQuery.of(context).padding.bottom;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = theme.brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Responsive sizing based on screen width
-    final height = screenWidth < 375 ? 56.0 : 64.0; // Compact on small screens
-    final borderRadius = screenWidth < 375 ? 24.0 : 28.0;
+    // Theme-driven sizing – use text theme and icon theme so users can customize via Theme Settings
+    final height = screenWidth < 375 ? 56.0 : 64.0; // compact baseline
     final paddingHorizontal = screenWidth < 375 ? 8.0 : 12.0;
-    final iconSize = screenWidth < 375 ? 16.0 : 18.0;
-    final fontSize = screenWidth < 375 ? 8.0 : 9.0;
+    final iconSize = (theme.textTheme.labelLarge?.fontSize ?? 14.0) * 1.2;
+    final fontSize = theme.textTheme.labelLarge?.fontSize ?? 14.0;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        12,
-        0,
-        12,
-        bottomInset + 12,
-      ), // Reduced padding for compact feel
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(
-          borderRadius,
-        ), // Responsive rounding
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 25,
-            sigmaY: 25,
-          ), // Slightly reduced blur for cleaner look
-          child: Container(
-            height: height, // Reduced height for compact design
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius),
-              color:
-                  isDark
-                      ? const Color(0xFF0B1224).withOpacity(
-                        0.95,
-                      ) // Slightly reduced opacity
-                      : Colors.white.withOpacity(
-                        0.92,
-                      ), // Slightly reduced opacity
-              // Remove border to match user preference for no border lines
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(
-                    0.15,
-                  ), // Reduced shadow for subtlety
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              children: List.generate(
-                _items.length,
-                (index) => _CompactFuturisticTabButton(
-                  item: _items[index],
-                  selected: index == currentIndex,
-                  onTap: () => onTap(index),
-                  iconSize: iconSize,
-                  fontSize: fontSize,
-                  paddingHorizontal: paddingHorizontal,
-                ),
-              ),
-            ),
+    final navBackground = theme.colorScheme.surface.withOpacity(
+      isDark ? 0.92 : 0.92,
+    );
+    final navTopBorder = theme.colorScheme.onSurface.withOpacity(0.06);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(0, 8, 0, bottomInset),
+      height: height + bottomInset,
+      decoration: BoxDecoration(
+        color: navBackground,
+        border: Border(top: BorderSide(color: navTopBorder)),
+      ),
+      child: Row(
+        children: List.generate(
+          _items.length,
+          (index) => _CompactFuturisticTabButton(
+            item: _items[index],
+            selected: index == currentIndex,
+            onTap: () => onTap(index),
+            iconSize: iconSize,
+            fontSize: fontSize,
+            paddingHorizontal: paddingHorizontal,
           ),
         ),
       ),
@@ -197,62 +176,87 @@ class _CompactFuturisticTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).primaryColor;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+
+    final iconContainerSize = iconSize * 2;
+    final bgColor =
+        selected
+            ? primary
+            : (isDark
+                ? Colors.white.withOpacity(0.1)
+                : Colors.black.withOpacity(0.05));
+    final iconColor =
+        selected
+            ? theme.colorScheme.onPrimary
+            : (isDark ? Colors.white70 : Colors.black87);
+    final labelStyle = theme.textTheme.labelLarge?.copyWith(
+      fontSize: fontSize,
+      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      color: selected ? primary : (isDark ? Colors.white70 : Colors.black54),
+    );
 
     return Expanded(
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(
+          0,
+        ), // no rounding per global preference
         onTap: onTap,
         child: SizedBox(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              /// ICON CONTAINER (COMPACT SIZE)
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                transform: Matrix4.translationValues(0, selected ? -1 : 0, 0),
-                width: iconSize * 2,
-                height: iconSize * 2,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      selected
-                          ? primary
-                          : (isDark
-                              ? Colors.white.withOpacity(0.1)
-                              : Colors.black.withOpacity(0.05)),
-                ),
-                child: Icon(
-                  item.icon,
-                  size: iconSize,
-                  color:
-                      selected
-                          ? Colors.white
-                          : (isDark ? Colors.white70 : Colors.black87),
-                ),
-              ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final availableH = constraints.maxHeight;
+              final iconH = iconContainerSize.clamp(0.0, availableH * 0.6);
+              final iconSizeAdjusted = iconSize.clamp(0.0, iconH * 0.9);
 
-              /// LABEL (ONLY WHEN ACTIVE - COMPACT)
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 150),
-                child:
-                    selected
-                        ? Padding(
-                          padding: EdgeInsets.only(top: 2),
-                          child: Text(
-                            item.label,
-                            key: ValueKey(item.label),
-                            style: TextStyle(
-                              fontSize: fontSize,
-                              fontWeight: FontWeight.w600,
-                              color: primary,
-                            ),
-                          ),
-                        )
-                        : const SizedBox.shrink(),
-              ),
-            ],
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  /// ICON CONTAINER (COMPACT SIZE)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    transform: Matrix4.translationValues(
+                      0,
+                      selected ? -1 : 0,
+                      0,
+                    ),
+                    width: iconH,
+                    height: iconH,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: bgColor,
+                    ),
+                    child: Icon(
+                      item.icon,
+                      size: iconSizeAdjusted,
+                      color: iconColor,
+                    ),
+                  ),
+
+                  /// LABEL (ONLY WHEN ACTIVE - COMPACT)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 150),
+                    child:
+                        selected
+                            ? Padding(
+                              padding: EdgeInsets.only(top: 2),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 64),
+                                child: Text(
+                                  item.label,
+                                  key: ValueKey(item.label),
+                                  style: labelStyle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            : const SizedBox.shrink(),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

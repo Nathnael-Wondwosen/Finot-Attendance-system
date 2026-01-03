@@ -1,11 +1,8 @@
 import '../../domain/repositories/section_repository.dart';
-import '../datasources/local_data_source.dart';
 import '../../domain/entities/section_entity.dart';
 
 class SectionRepositoryImpl implements SectionRepository {
-  final LocalDataSource _localDataSource;
-
-  SectionRepositoryImpl(this._localDataSource);
+  SectionRepositoryImpl();
 
   @override
   Future<List<SectionEntity>> getSections() async {

@@ -174,27 +174,17 @@ class _ModernAndroidHeader extends StatelessWidget {
         (isDark ? const Color(0xFF121212) : Colors.white);
 
     // Blend with our custom colors for a more integrated look
-    final backgroundColor =
-        isDark
-            ? systemBackgroundColor?.withOpacity(0.85) ??
-                const Color(0xFF0F172A).withOpacity(0.85)
-            : systemBackgroundColor?.withOpacity(0.85) ??
-                Colors.white.withOpacity(0.85);
+    final backgroundColor = systemBackgroundColor.withOpacity(0.85);
 
     return Container(
       // No Material wrapper to allow transparency where status bar overlaps
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Status bar area (transparent to show device status bar)
+          // Main header content including status bar area
           Container(
-            height: statusBarHeight,
-            color: Colors.transparent, // Transparent to show device status bar
-          ),
-          // Main header content
-          Container(
-            height: 72, // Increased height for more premium feel
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            height: 72 + statusBarHeight,
+            padding: EdgeInsets.fromLTRB(16, statusBarHeight, 16, 0),
             decoration: BoxDecoration(
               color: backgroundColor, // Use system-aware background color
               borderRadius: const BorderRadius.vertical(

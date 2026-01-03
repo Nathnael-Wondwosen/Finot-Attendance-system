@@ -4,11 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/class_entity.dart';
 import '../providers/app_provider.dart';
 import 'class_selection_screen.dart';
-import 'sidebar_drawer.dart';
-import 'attendance_summary_screen.dart';
-import 'sync_status_screen.dart';
-import 'settings_screen.dart';
-import '../../core/ui_components.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -169,7 +164,7 @@ class _HeroWelcomeCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           height: 140,
           decoration: BoxDecoration(

@@ -99,7 +99,7 @@ class ModernCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final surface = color ?? theme.cardColor ?? theme.colorScheme.surface;
+    final surface = color ?? theme.cardColor;
     final borderColor = theme.dividerColor.withOpacity(0.08);
     return Container(
       margin: margin ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -220,5 +220,63 @@ class ModernTextField extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Backwards-compatible wrappers for legacy code
+class CustomTextField extends StatelessWidget {
+  final String label;
+  final String? hint;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  final String? Function(String?)? validator;
+  final Function(String)? onChanged;
+
+  const CustomTextField({
+    Key? key,
+    required this.label,
+    this.hint,
+    this.controller,
+    this.keyboardType,
+    this.obscureText = false,
+    this.validator,
+    this.onChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 6),
+        ModernTextField(
+          hintText: hint ?? '',
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          validator: validator,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class CustomButton extends StatelessWidget {
+  final String text;
+  final VoidCallback? onPressed;
+  const CustomButton({Key? key, required this.text, this.onPressed})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ModernButton(text: text, onPressed: onPressed);
   }
 }

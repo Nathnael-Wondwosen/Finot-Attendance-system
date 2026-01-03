@@ -224,103 +224,81 @@ class _Header extends StatelessWidget {
     final systemBackgroundColor =
         systemTheme.appBarTheme.backgroundColor ??
         (isDark ? const Color(0xFF121212) : Colors.white);
-    final systemSurfaceColor = systemTheme.colorScheme.surface;
 
     // Blend with our custom colors for a more integrated look
-    final backgroundColor =
-        isDark
-            ? systemBackgroundColor?.withOpacity(0.85) ??
-                const Color(0xFF0F172A).withOpacity(0.85)
-            : systemBackgroundColor?.withOpacity(0.85) ??
-                Colors.white.withOpacity(0.85);
+    final backgroundColor = systemBackgroundColor.withOpacity(0.85);
 
-    return Container(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Status bar area (transparent to show device status bar)
-          Container(
-            height: statusBarHeight,
-            color: Colors.transparent, // Transparent to show device status bar
-          ),
-          // Main header content
-          ClipRRect(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: 40,
-                sigmaY: 40,
-              ), // Enhanced blur for premium glassmorphism
-              child: Container(
-                height: 76, // Slightly taller for more premium feel
-                decoration: BoxDecoration(
-                  color: backgroundColor, // Use system-aware background color
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(24),
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      (isDark ? Colors.white : Colors.black).withOpacity(0.05),
-                      (isDark ? Colors.white : Colors.black).withOpacity(0.02),
-                      Colors.transparent,
-                    ],
-                  ),
-                  // Enhanced shadow for depth
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          isDark
-                              ? Colors.black.withOpacity(0.4)
-                              : Colors.black.withOpacity(0.18),
-                      blurRadius: 20,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ), // More generous spacing
-                  child: Row(
-                    children: [
-                      _HeaderButton(
-                        icon: AnimatedIcon(
-                          icon: AnimatedIcons.menu_close,
-                          progress: animation,
-                        ),
-                        color: primary,
-                        onTap: onMenu,
-                      ),
-                      const SizedBox(width: 16), // More spacing
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 20, // Larger for more impact
-                            fontWeight:
-                                FontWeight.w700, // Bolder for more presence
-                            color: isDark ? Colors.white : Colors.black87,
-                            letterSpacing: 0.3, // Better readability
-                            shadows: [
-                              Shadow(
-                                color: isDark ? Colors.black54 : Colors.white12,
-                                offset: const Offset(0, 1),
-                                blurRadius: 2,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      if (actions != null) ...actions!,
-                    ],
-                  ),
-                ),
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(
+          sigmaX: 20,
+          sigmaY: 20,
+        ), // Enhanced blur for premium glassmorphism
+        child: Container(
+          height: 76 + statusBarHeight, // include status bar height
+          padding: EdgeInsets.fromLTRB(16, statusBarHeight, 16, 10),
+          decoration: BoxDecoration(
+            color: backgroundColor, // Use system-aware background color
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(24),
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                (isDark ? Colors.white : Colors.black).withOpacity(0.05),
+                (isDark ? Colors.white : Colors.black).withOpacity(0.02),
+                Colors.transparent,
+              ],
+            ),
+            // Enhanced shadow for depth
+            boxShadow: [
+              BoxShadow(
+                color:
+                    isDark
+                        ? Colors.black.withOpacity(0.4)
+                        : Colors.black.withOpacity(0.18),
+                blurRadius: 30,
+                offset: const Offset(0, 8),
               ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+              children: [
+                _HeaderButton(
+                  icon: AnimatedIcon(
+                    icon: AnimatedIcons.menu_close,
+                    progress: animation,
+                  ),
+                  color: primary,
+                  onTap: onMenu,
+                ),
+                const SizedBox(width: 16), // More spacing
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 22, // Larger for more impact
+                      fontWeight: FontWeight.w800, // Bolder for more presence
+                      color: isDark ? Colors.white : Colors.black87,
+                      letterSpacing: 0.3, // Better readability
+                      shadows: [
+                        Shadow(
+                          color: isDark ? Colors.black54 : Colors.white12,
+                          offset: const Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (actions != null) ...actions!,
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -350,40 +328,76 @@ class SidebarDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final backgroundColor = theme.scaffoldBackgroundColor;
 
     return SizedBox(
       width: width,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors:
-                isDark
-                    ? const [Color(0xFF0B1224), Color(0xFF0F172A)]
-                    : [Colors.white, Colors.grey.shade50],
-          ),
-          boxShadow: const [
+          color: backgroundColor, // Use theme background color
+          boxShadow: [
             BoxShadow(
-              color: Colors.black26,
-              blurRadius: 30,
-              offset: Offset(12, 0),
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
+              spreadRadius: 2,
+              offset: const Offset(12, 0),
             ),
           ],
         ),
         child: SafeArea(
           child: Column(
             children: [
-              const SizedBox(height: 20),
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: primaryColor.withOpacity(0.15),
-                child: Icon(Icons.person, color: primaryColor),
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      primaryColor.withOpacity(0.9),
+                      primaryColor.withOpacity(0.7),
+                      primaryColor.withOpacity(0.5),
+                    ],
+                  ),
+                  border: const Border(
+                    bottom: BorderSide(color: Colors.white24),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    // Place for logo
+                    Container(
+                      width: 80,
+                      height: 80,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white30),
+                      ),
+                      child: const Icon(
+                        Icons.school,
+                        color: Colors.white70,
+                        size: 40,
+                      ), // This will be replaced with your actual logo
+                    ),
+                    Text(
+                      'Finot Attendance',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'የፍኖተ ሰላም ሰንበት ት/ቤት',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Administrator',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 24),
 
               /// NAV ITEMS
               Expanded(
@@ -408,7 +422,7 @@ class SidebarDrawer extends StatelessWidget {
                           decoration: BoxDecoration(
                             color:
                                 selected
-                                    ? primaryColor.withOpacity(0.15)
+                                    ? primaryColor.withOpacity(0.2)
                                     : Colors.transparent,
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -421,7 +435,7 @@ class SidebarDrawer extends StatelessWidget {
                                         ? primaryColor
                                         : isDark
                                         ? Colors.white70
-                                        : Colors.grey,
+                                        : Colors.grey[600],
                               ),
                               const SizedBox(width: 14),
                               Expanded(
@@ -437,7 +451,7 @@ class SidebarDrawer extends StatelessWidget {
                                             ? primaryColor
                                             : isDark
                                             ? Colors.white
-                                            : Colors.black,
+                                            : Colors.black87,
                                   ),
                                 ),
                               ),

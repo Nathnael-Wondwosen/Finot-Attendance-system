@@ -9,19 +9,18 @@ class ThemePreferences {
   static const String accentColorKey = 'accent_color';
   static const String densityKey = 'app_density';
   static const String colorIntensityKey = 'color_intensity';
+  static const String colorBrightnessKey = 'color_brightness';
   static const String fontSizeScaleKey = 'font_size_scale';
   static const String cornerRadiusKey = 'corner_radius';
-  static const String useGradientBackgroundKey = 'use_gradient_background';
-  static const String backgroundColorKey = 'background_color';
 
   static const int defaultPrimaryColor = 0xFF2196F3; // Blue
   static const int defaultAccentColor = 0xFF03DAC6; // Teal
   static const int defaultDensity = 0; // Normal density
   static const double defaultColorIntensity = 0.8;
+  static const double defaultColorBrightness =
+      1.0; // 1.0 = neutral, <1 darker, >1 brighter
   static const double defaultFontSizeScale = 1.0;
   static const double defaultCornerRadius = 8.0;
-  static const bool defaultUseGradientBackground = false;
-  static const int defaultBackgroundColor = 0xFFF5F5F5; // Grey 50
 
   late SharedPreferences _prefs;
 
@@ -71,6 +70,15 @@ class ThemePreferences {
     await _prefs.setDouble(colorIntensityKey, intensity);
   }
 
+  // New: color brightness control (darker / brighter)
+  double get colorBrightness {
+    return _prefs.getDouble(colorBrightnessKey) ?? defaultColorBrightness;
+  }
+
+  Future<void> setColorBrightness(double brightness) async {
+    await _prefs.setDouble(colorBrightnessKey, brightness);
+  }
+
   double get fontSizeScale {
     return _prefs.getDouble(fontSizeScaleKey) ?? defaultFontSizeScale;
   }
@@ -87,21 +95,15 @@ class ThemePreferences {
     await _prefs.setDouble(cornerRadiusKey, radius);
   }
 
-  bool get useGradientBackground {
-    return _prefs.getBool(useGradientBackgroundKey) ??
-        defaultUseGradientBackground;
-  }
-
-  Future<void> setUseGradientBackground(bool useGradient) async {
-    await _prefs.setBool(useGradientBackgroundKey, useGradient);
-  }
-
+  // Get background color based on theme mode only
   Color get backgroundColor {
-    return Color(_prefs.getInt(backgroundColorKey) ?? defaultBackgroundColor);
-  }
+    final themeIndex = _prefs.getInt(themeModeKey) ?? ThemeMode.light.index;
+    final themeMode = ThemeMode.values[themeIndex];
 
-  Future<void> setBackgroundColor(Color color) async {
-    await _prefs.setInt(backgroundColorKey, color.value);
+    // Only two background options: Light and Dark
+    return themeMode == ThemeMode.dark
+        ? const Color(0xFF121212) // Dark background
+        : const Color(0xFFFFFFFF); // Light background
   }
 }
 
@@ -111,10 +113,9 @@ class ThemeState {
   final Color accentColor;
   final int density;
   final double colorIntensity;
+  final double colorBrightness;
   final double fontSizeScale;
   final double cornerRadius;
-  final bool useGradientBackground;
-  final Color backgroundColor;
 
   const ThemeState({
     required this.themeMode,
@@ -122,10 +123,9 @@ class ThemeState {
     required this.accentColor,
     required this.density,
     this.colorIntensity = 0.8,
+    this.colorBrightness = 1.0,
     this.fontSizeScale = 1.0,
     this.cornerRadius = 8.0,
-    this.useGradientBackground = false,
-    this.backgroundColor = const Color(0xFFF5F5F5),
   });
 
   ThemeState copyWith({
@@ -134,10 +134,9 @@ class ThemeState {
     Color? accentColor,
     int? density,
     double? colorIntensity,
+    double? colorBrightness,
     double? fontSizeScale,
     double? cornerRadius,
-    bool? useGradientBackground,
-    Color? backgroundColor,
   }) {
     return ThemeState(
       themeMode: themeMode ?? this.themeMode,
@@ -145,11 +144,9 @@ class ThemeState {
       accentColor: accentColor ?? this.accentColor,
       density: density ?? this.density,
       colorIntensity: colorIntensity ?? this.colorIntensity,
+      colorBrightness: colorBrightness ?? this.colorBrightness,
       fontSizeScale: fontSizeScale ?? this.fontSizeScale,
       cornerRadius: cornerRadius ?? this.cornerRadius,
-      useGradientBackground:
-          useGradientBackground ?? this.useGradientBackground,
-      backgroundColor: backgroundColor ?? this.backgroundColor,
     );
   }
 }
@@ -189,10 +186,9 @@ class ThemeStateNotifier extends StateNotifier<ThemeState> {
       accentColor: themePrefs.accentColor,
       density: themePrefs.density,
       colorIntensity: themePrefs.colorIntensity,
+      colorBrightness: themePrefs.colorBrightness,
       fontSizeScale: themePrefs.fontSizeScale,
       cornerRadius: themePrefs.cornerRadius,
-      useGradientBackground: themePrefs.useGradientBackground,
-      backgroundColor: themePrefs.backgroundColor,
     );
   }
 
@@ -227,6 +223,12 @@ class ThemeStateNotifier extends StateNotifier<ThemeState> {
     state = state.copyWith(colorIntensity: intensity);
   }
 
+  Future<void> updateColorBrightness(double brightness) async {
+    final themePrefs = await ref.read(themePreferencesProvider.future);
+    await themePrefs.setColorBrightness(brightness);
+    state = state.copyWith(colorBrightness: brightness);
+  }
+
   Future<void> updateFontSizeScale(double scale) async {
     final themePrefs = await ref.read(themePreferencesProvider.future);
     await themePrefs.setFontSizeScale(scale);
@@ -239,18 +241,6 @@ class ThemeStateNotifier extends StateNotifier<ThemeState> {
     state = state.copyWith(cornerRadius: radius);
   }
 
-  Future<void> updateUseGradientBackground(bool useGradient) async {
-    final themePrefs = await ref.read(themePreferencesProvider.future);
-    await themePrefs.setUseGradientBackground(useGradient);
-    state = state.copyWith(useGradientBackground: useGradient);
-  }
-
-  Future<void> updateBackgroundColor(Color color) async {
-    final themePrefs = await ref.read(themePreferencesProvider.future);
-    await themePrefs.setBackgroundColor(color);
-    state = state.copyWith(backgroundColor: color);
-  }
-
   // Reset to default theme
   Future<void> resetToDefault() async {
     final themePrefs = await ref.read(themePreferencesProvider.future);
@@ -259,10 +249,9 @@ class ThemeStateNotifier extends StateNotifier<ThemeState> {
     await themePrefs.setAccentColor(const Color(0xFF03DAC6));
     await themePrefs.setDensity(0);
     await themePrefs.setColorIntensity(0.8);
+    await themePrefs.setColorBrightness(1.0);
     await themePrefs.setFontSizeScale(1.0);
     await themePrefs.setCornerRadius(8.0);
-    await themePrefs.setUseGradientBackground(false);
-    await themePrefs.setBackgroundColor(const Color(0xFFF5F5F5));
 
     state = const ThemeState(
       themeMode: ThemeMode.light,
@@ -270,10 +259,9 @@ class ThemeStateNotifier extends StateNotifier<ThemeState> {
       accentColor: Color(0xFF03DAC6),
       density: 0,
       colorIntensity: 0.8,
+      colorBrightness: 1.0,
       fontSizeScale: 1.0,
       cornerRadius: 8.0,
-      useGradientBackground: false,
-      backgroundColor: Color(0xFFF5F5F5),
     );
   }
 

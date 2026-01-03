@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'data/repositories/attendance_repository_impl.dart';
 import 'data/datasources/local_data_source.dart';
-import 'domain/repositories/attendance_repository.dart';
 
 void main() {
   runApp(ProviderScope(child: MaterialApp(home: CheckAttendanceScreen())));

@@ -1,20 +1,9 @@
 import '../domain/repositories/sync_repository.dart';
-import '../domain/repositories/class_repository.dart';
-import '../domain/repositories/student_repository.dart';
-import '../domain/repositories/attendance_repository.dart';
 
 class SyncService {
   final SyncRepository _syncRepository;
-  final ClassRepository _classRepository;
-  final StudentRepository _studentRepository;
-  final AttendanceRepository _attendanceRepository;
 
-  SyncService(
-    this._syncRepository,
-    this._classRepository,
-    this._studentRepository,
-    this._attendanceRepository,
-  );
+  SyncService(this._syncRepository);
 
   // Download students for a specific class from remote to local
   Future<bool> downloadClassData(String classId) async {

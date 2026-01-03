@@ -49,13 +49,5 @@ final syncRepositoryProvider = Provider<SyncRepository>((ref) {
 
 final syncServiceProvider = Provider<SyncService>((ref) {
   final syncRepository = ref.watch(syncRepositoryProvider);
-  final classRepository = ref.watch(classRepositoryProvider);
-  final studentRepository = ref.watch(studentRepositoryProvider);
-  final attendanceRepository = ref.watch(attendanceRepositoryProvider);
-  return SyncService(
-    syncRepository,
-    classRepository,
-    studentRepository,
-    attendanceRepository,
-  );
+  return SyncService(syncRepository);
 });
