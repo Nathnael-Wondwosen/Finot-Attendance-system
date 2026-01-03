@@ -1,9 +1,7 @@
 import '../datasources/local_data_source.dart';
 import '../datasources/remote_data_source.dart';
 import '../../domain/repositories/sync_repository.dart';
-import '../../domain/entities/class_entity.dart';
 import '../../domain/entities/student_entity.dart';
-import '../../domain/entities/attendance_entity.dart';
 import '../../domain/repositories/class_repository.dart';
 import '../../domain/repositories/student_repository.dart';
 

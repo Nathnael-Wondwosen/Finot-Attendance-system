@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/navigation_service.dart';
 import '../providers/auth_provider.dart';
+import 'main_navigation_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
+  const SplashScreen({super.key});
+
   @override
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
@@ -19,7 +22,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2), () {});
 
     // Navigate directly to main navigation screen instead of login
-    NavigationService.replaceWith('/main-navigation');
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+    );
   }
 
   @override

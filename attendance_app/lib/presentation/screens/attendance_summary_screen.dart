@@ -22,7 +22,10 @@ class _AttendanceSummaryScreenState
   List<ClassEntity> _classes = [];
   List<StudentEntity> _students = [];
   List<AttendanceRecord> _attendanceRecords = [];
+  List<AttendanceEntity> _individualAttendanceRecords = [];
   bool _isLoading = true;
+  bool _showIndividualRecords =
+      false; // Toggle between grouped and individual view
 
   @override
   void initState() {
@@ -48,28 +51,59 @@ class _AttendanceSummaryScreenState
       final allAttendance =
           await attendanceRepository
               .getAllAttendance(); // Get all attendance records
+      print('DEBUG: Total attendance records loaded: ${allAttendance.length}');
+
+      // Print detailed debug info about all records
+      for (int i = 0; i < allAttendance.length; i++) {
+        final att = allAttendance[i];
+        print(
+          'DEBUG: Attendance ${i + 1} - Class: "${att.className}", Date: "${att.date}", Status: "${att.status}", ClassId: ${att.classId}, StudentId: ${att.studentId}',
+        );
+      }
 
       // Group attendance by class and date to create summary records
       final groupedMap = <String, List<AttendanceEntity>>{};
+      print(
+        'DEBUG: Starting to group ${allAttendance.length} attendance records',
+      );
+
       for (final attendance in allAttendance) {
-        if (attendance.date != null && attendance.className != null) {
+        if (attendance.className != null) {
           // Parse the date string to get just the date part (YYYY-MM-DD)
           DateTime attendanceDate;
           try {
-            attendanceDate = DateTime.parse(attendance.date!);
+            attendanceDate = DateTime.parse(attendance.date);
+            // Format the date to YYYY-MM-DD to ensure consistency
+            final dateStr =
+                '${attendanceDate.year}-${attendanceDate.month.toString().padLeft(2, '0')}-${attendanceDate.day.toString().padLeft(2, '0')}';
+            final key = '${attendance.className}_$dateStr';
+
+            print(
+              'DEBUG: Processing attendance - Class: ${attendance.className}, DateStr: $dateStr, Key: $key',
+            );
+
+            if (!groupedMap.containsKey(key)) {
+              groupedMap[key] = [];
+            }
+            groupedMap[key]!.add(attendance);
           } catch (e) {
             // If parsing fails, skip this record
+            print(
+              'DEBUG: Error parsing date for attendance: ${attendance.date}, Error: $e',
+            );
             continue;
           }
-
-          final key =
-              '${attendance.className}_${attendanceDate.year}-${attendanceDate.month.toString().padLeft(2, '0')}-${attendanceDate.day.toString().padLeft(2, '0')}';
-          if (!groupedMap.containsKey(key)) {
-            groupedMap[key] = [];
-          }
-          groupedMap[key]!.add(attendance);
+        } else {
+          print(
+            'DEBUG: Skipping attendance with null date or className - Date: ${attendance.date}, ClassName: ${attendance.className}',
+          );
         }
       }
+
+      print('DEBUG: Grouped into ${groupedMap.length} unique combinations');
+      groupedMap.forEach((key, value) {
+        print('DEBUG: Group $key has ${value.length} records');
+      });
 
       // Convert grouped attendance to summary records
       final records = <AttendanceRecord>[];
@@ -87,6 +121,7 @@ class _AttendanceSummaryScreenState
         int presentCount = 0;
         int absentCount = 0;
         int lateCount = 0;
+        int classId = 0; // Initialize with default value
 
         for (final attendance in entry.value) {
           switch (attendance.status) {
@@ -100,9 +135,13 @@ class _AttendanceSummaryScreenState
               lateCount++;
               break;
           }
+          // Get the classId from the first attendance record
+          if (classId == 0) {
+            classId = attendance.classId;
+          }
         }
 
-        // Parse the date from the key (format: YYYY-MM-DD)
+        // The dateStr is already in the correct format from the key creation
         DateTime parsedDate;
         try {
           parsedDate = DateTime.parse(dateStr);
@@ -115,6 +154,7 @@ class _AttendanceSummaryScreenState
           AttendanceRecord(
             id: records.length + 1,
             className: className,
+            classId: classId,
             date: parsedDate,
             presentCount: presentCount,
             absentCount: absentCount,
@@ -123,10 +163,12 @@ class _AttendanceSummaryScreenState
         );
       }
 
+      // Also store individual attendance records for detailed view
       setState(() {
         _classes = classes;
         _students = students;
         _attendanceRecords = records;
+        _individualAttendanceRecords = allAttendance;
         _isLoading = false;
       });
     } catch (e) {
@@ -144,134 +186,235 @@ class _AttendanceSummaryScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Attendance Summary'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child:
-            _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _attendanceRecords.isEmpty
-                ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.check_circle_outline,
-                        size: 80,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No attendance records found',
-                        style: TextStyle(fontSize: 18, color: Colors.grey),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Take attendance to see records here',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                )
-                : RefreshIndicator(
-                  onRefresh: _loadAttendanceData,
-                  child: ListView.builder(
-                    itemCount: _attendanceRecords.length,
-                    itemBuilder: (context, index) {
-                      final record = _attendanceRecords[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          leading: Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Theme.of(
-                                context,
-                              ).primaryColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${record.date.day}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).primaryColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                          title: Text(
-                            record.className,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${record.date.toString().split(' ')[0]} • ${record.presentCount + record.absentCount + record.lateCount} students',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          trailing: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '${record.presentCount} Present',
-                                style: const TextStyle(
-                                  color: Colors.green,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${record.absentCount} Absent',
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${record.lateCount} Late',
-                                style: const TextStyle(
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          onTap: () {
-                            // Navigate to detailed attendance view
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (context) => DetailedAttendanceScreen(
-                                      record: record,
-                                      students: _students,
-                                      classes: _classes,
-                                    ),
-                              ),
-                            );
-                          },
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _showIndividualRecords
+              ? _buildIndividualAttendanceView()
+              : _attendanceRecords.isEmpty
+              ? const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.check_circle_outline,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'No attendance records found',
+                      style: TextStyle(fontSize: 18, color: Colors.grey),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Take attendance to see records here',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              )
+              : RefreshIndicator(
+                onRefresh: _loadAttendanceData,
+                child: ListView.builder(
+                  itemCount: _attendanceRecords.length,
+                  itemBuilder: (context, index) {
+                    final record = _attendanceRecords[index];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
                         ),
-                      );
-                    },
+                        leading: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).primaryColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${record.date.day}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).primaryColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          record.className,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${record.date.toString().split(' ')[0]} • ${record.presentCount + record.absentCount + record.lateCount} students',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              '${record.presentCount} Present',
+                              style: const TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${record.absentCount} Absent',
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${record.lateCount} Late',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        onTap: () {
+                          // Navigate to detailed attendance view
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => DetailedAttendanceScreen(
+                                    record: record,
+                                    students: _students,
+                                    classes: _classes,
+                                  ),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+    );
+  }
+
+  Widget _buildIndividualAttendanceView() {
+    return RefreshIndicator(
+      onRefresh: _loadAttendanceData,
+      child: ListView.builder(
+        itemCount: _individualAttendanceRecords.length,
+        itemBuilder: (context, index) {
+          final attendance = _individualAttendanceRecords[index];
+
+          // Find student name
+          final student = _students.firstWhere(
+            (s) => s.id == attendance.studentId,
+            orElse:
+                () => StudentEntity(
+                  id: attendance.studentId,
+                  name: 'Unknown Student',
+                  classId: attendance.classId,
+                  sectionId: 0,
+                ),
+          );
+
+          final statusColor = _getStatusColor(attendance.status);
+
+          return Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              leading: Container(
+                width: 45,
+                height: 45,
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    student.name.substring(0, 1).toUpperCase(),
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
+              ),
+              title: Text(
+                student.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${attendance.className ?? 'Unknown Class'}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 14),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${DateTime.parse(attendance.date).toString().split(' ')[0]} at ${DateTime.parse(attendance.date).toString().split(' ')[1].substring(0, 5)}',
+                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                ],
+              ),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  attendance.status.toUpperCase(),
+                  style: TextStyle(
+                    color: statusColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'present':
+        return Colors.green;
+      case 'absent':
+        return Colors.red;
+      case 'late':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
   }
 }
 
@@ -279,6 +422,7 @@ class _AttendanceSummaryScreenState
 class AttendanceRecord {
   final int id;
   final String className;
+  final int classId; // Add classId to help with matching
   final DateTime date;
   final int presentCount;
   final int absentCount;
@@ -287,6 +431,7 @@ class AttendanceRecord {
   AttendanceRecord({
     required this.id,
     required this.className,
+    required this.classId,
     required this.date,
     required this.presentCount,
     required this.absentCount,
@@ -309,166 +454,126 @@ class DetailedAttendanceScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Get students for the specific class
-    final classEntity = classes.firstWhere(
-      (c) => c.name == record.className,
-      orElse: () => classes.first,
-    );
-
+    // Get students for the specific class using the classId from the record
     final classStudents =
-        students.where((s) => s.classId == classEntity.serverId).toList();
+        students.where((s) => s.classId == record.classId).toList();
 
     // Load real attendance records for this specific class and date
     final attendanceRepository = ref.read(attendanceRepositoryProvider);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Attendance Details - ${record.className}'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+    return FutureBuilder<List<AttendanceEntity>>(
+      future: attendanceRepository.getAttendanceByClassSectionDate(
+        record.classId,
+        0,
+        record.date.toIso8601String(),
       ),
-      body: FutureBuilder<List<AttendanceEntity>>(
-        future: attendanceRepository.getAttendanceByClassSectionDate(
-          classEntity.serverId ?? 0,
-          0,
-          record.date.toIso8601String(),
-        ),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text('Error loading attendance: ${snapshot.error}'),
-            );
-          }
+        if (snapshot.hasError) {
+          return Center(
+            child: Text('Error loading attendance: ${snapshot.error}'),
+          );
+        }
 
-          final attendanceRecords = snapshot.data ?? [];
+        final attendanceRecords = snapshot.data ?? [];
 
-          // Create attendance details from real attendance records
-          final attendanceDetails = <AttendanceDetail>[];
+        // Create a map of student attendance for quick lookup
+        final Map<int?, String> studentAttendanceMap = {};
+        for (final attendance in attendanceRecords) {
+          studentAttendanceMap[attendance.studentId] = attendance.status;
+        }
 
-          for (final attendance in attendanceRecords) {
-            // Find the corresponding student
-            final student = classStudents.firstWhere(
-              (s) => s.id == attendance.studentId,
-              orElse:
-                  () => StudentEntity(
-                    id: attendance.studentId,
-                    name: 'Unknown Student',
-                    classId: attendance.classId,
-                    sectionId: 0,
-                  ),
-            );
+        // Create attendance details for all students in the class
+        final attendanceDetails = <AttendanceDetail>[];
 
-            attendanceDetails.add(
-              AttendanceDetail(student: student, status: attendance.status),
-            );
-          }
+        // For each student in the class, show their attendance status
+        // If no attendance record exists for a student, default to 'absent'
+        for (final student in classStudents) {
+          final status = studentAttendanceMap[student.id] ?? 'absent';
+          attendanceDetails.add(
+            AttendanceDetail(student: student, status: status),
+          );
+        }
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Date: ${record.date.toString().split(' ')[0]}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Date: ${record.date.toString().split(' ')[0]}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildStatusSummary(
+                          'Present',
+                          record.presentCount,
+                          Colors.green,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildStatusSummary(
-                            'Present',
-                            record.presentCount,
-                            Colors.green,
-                          ),
-                          _buildStatusSummary(
-                            'Absent',
-                            record.absentCount,
-                            Colors.red,
-                          ),
-                          _buildStatusSummary(
-                            'Late',
-                            record.lateCount,
-                            Colors.orange,
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        _buildStatusSummary(
+                          'Absent',
+                          record.absentCount,
+                          Colors.red,
+                        ),
+                        _buildStatusSummary(
+                          'Late',
+                          record.lateCount,
+                          Colors.orange,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Students (${attendanceDetails.length})',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Students (${attendanceDetails.length})',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: attendanceDetails.length,
-                    itemBuilder: (context, index) {
-                      final detail = attendanceDetails[index];
-                      final statusColor = _getStatusColor(detail.status);
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: attendanceDetails.length,
+                  itemBuilder: (context, index) {
+                    final detail = attendanceDetails[index];
+                    final statusColor = _getStatusColor(detail.status);
 
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: ListTile(
-                          leading: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Center(
-                              child: Text(
-                                detail.student.fullName
-                                    .substring(0, 1)
-                                    .toUpperCase(),
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                          title: Text(
-                            detail.student.fullName,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text(
-                            detail.student.actualGrade ?? 'Grade not specified',
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: statusColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                          child: Center(
                             child: Text(
-                              detail.status.toUpperCase(),
+                              detail.student.fullName
+                                  .substring(0, 1)
+                                  .toUpperCase(),
                               style: TextStyle(
                                 color: statusColor,
                                 fontWeight: FontWeight.bold,
@@ -476,15 +581,40 @@ class DetailedAttendanceScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                        title: Text(
+                          detail.student.fullName,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: Text(
+                          detail.student.actualGrade ?? 'Grade not specified',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            detail.status.toUpperCase(),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

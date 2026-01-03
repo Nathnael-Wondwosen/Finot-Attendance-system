@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/ui_components.dart';
-import '../../core/typography.dart';
 import '../../core/responsive_layout.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../domain/entities/attendance_entity.dart';
-import '../../domain/repositories/student_repository.dart';
-import '../../domain/repositories/attendance_repository.dart';
 import '../providers/app_provider.dart';
+import 'dashboard_screen.dart';
+import 'class_selection_screen.dart';
+import 'attendance_summary_screen.dart';
+import 'sync_status_screen.dart';
+import 'settings_screen.dart';
+import 'sidebar_drawer.dart';
+import '../../core/ui_components.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic>? arguments;
@@ -258,67 +261,69 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _selectedClassName.isNotEmpty
-              ? 'Attendance: $_selectedClassName'
-              : 'Attendance',
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (String result) {
-              if (result == 'mark_all_present') {
-                _markAll('present');
-              } else if (result == 'mark_all_absent') {
-                _markAll('absent');
-              } else if (result == 'mark_all_late') {
-                _markAll('late');
-              }
-            },
-            itemBuilder:
-                (BuildContext context) => <PopupMenuEntry<String>>[
-                  const PopupMenuItem<String>(
-                    value: 'mark_all_present',
-                    child: Text('Mark All Present'),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'mark_all_absent',
-                    child: Text('Mark All Absent'),
-                  ),
-                  const PopupMenuItem<String>(
-                    value: 'mark_all_late',
-                    child: Text('Mark All Late'),
-                  ),
-                ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.calendar_today),
-            onPressed: _selectDate,
-          ),
-        ],
-      ),
-      body: Column(
+    return SidebarScaffold(
+      title:
+          'Attendance - ${_selectedClassName.isEmpty ? 'Select Class' : _selectedClassName}',
+      navigationItems: [
+        const NavigationItem(title: 'Dashboard', icon: Icons.dashboard),
+        const NavigationItem(title: 'Classes', icon: Icons.school),
+        const NavigationItem(title: 'Summary', icon: Icons.summarize),
+        const NavigationItem(title: 'Sync', icon: Icons.sync),
+        const NavigationItem(title: 'Settings', icon: Icons.settings),
+      ],
+      currentIndex: 2, // Attendance tab
+      onNavigationChanged: (index) {
+        _handleNavigation(context, index);
+      },
+      child: Column(
         children: [
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: 16,
               vertical: ScreenSize.isSmallScreen(context) ? 12 : 16,
             ),
-            color: Colors.grey.shade50,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50.withOpacity(0.3),
+              border: Border(
+                bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+              ),
+            ),
             child: Column(
               children: [
-                Text(
-                  'Date: ${_selectedDate.toString().split(' ')[0]}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Date: ${_selectedDate.toString().split(' ')[0]}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _selectDate,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            color: Colors.cyanAccent,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Change',
+                            style: TextStyle(
+                              color: Colors.cyanAccent,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -327,22 +332,13 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                     _buildStatusChip('late', 'Late', Colors.orange),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Text(
-                      '${_attendanceStatus.values.where((status) => status == 'present').length} Present',
-                      style: const TextStyle(color: Colors.green),
-                    ),
-                    Text(
-                      '${_attendanceStatus.values.where((status) => status == 'absent').length} Absent',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                    Text(
-                      '${_attendanceStatus.values.where((status) => status == 'late').length} Late',
-                      style: const TextStyle(color: Colors.orange),
-                    ),
+                    _buildStatusCount('present', Colors.green),
+                    _buildStatusCount('absent', Colors.red),
+                    _buildStatusCount('late', Colors.orange),
                   ],
                 ),
               ],
@@ -362,7 +358,6 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
               onChanged: _searchStudents,
             ),
           ),
-          const SizedBox(height: 16),
           Expanded(
             child:
                 _isLoading
@@ -395,20 +390,36 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                           final status =
                               _attendanceStatus[student.id] ?? 'present';
 
-                          return Card(
+                          return Container(
                             margin: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.1),
+                              ),
                             ),
                             child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               leading: Container(
-                                width: 40,
-                                height: 40,
+                                width: 36,
+                                height: 36,
                                 decoration: BoxDecoration(
                                   color: _getStatusColor(
                                     status,
-                                  ).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(20),
+                                  ).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(18),
+                                  border: Border.all(
+                                    color: _getStatusColor(
+                                      status,
+                                    ).withOpacity(0.3),
+                                  ),
                                 ),
                                 child: Center(
                                   child: Text(
@@ -417,7 +428,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                                         .toUpperCase(),
                                     style: TextStyle(
                                       color: _getStatusColor(status),
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
                                     ),
                                   ),
                                 ),
@@ -425,29 +437,40 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                               title: Text(
                                 student.fullName,
                                 style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 15,
+                                  color: Colors.white,
                                 ),
                               ),
                               subtitle: Text(
                                 student.actualGrade ?? 'Grade not specified',
-                                style: TextStyle(color: Colors.grey[600]),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 12,
+                                ),
                               ),
                               trailing: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                                  horizontal: 10,
+                                  vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
                                   color: _getStatusColor(
                                     status,
-                                  ).withOpacity(0.1),
+                                  ).withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: _getStatusColor(
+                                      status,
+                                    ).withOpacity(0.3),
+                                  ),
                                 ),
                                 child: Text(
                                   _getStatusText(status),
                                   style: TextStyle(
                                     color: _getStatusColor(status),
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 11,
                                   ),
                                 ),
                               ),
@@ -462,17 +485,53 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                       ),
                     ),
           ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Colors.cyanAccent, Colors.blueAccent],
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.cyanAccent.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _saveAttendance,
+                  icon: const Icon(Icons.check, color: Colors.black),
+                  label: const Text(
+                    'Save Attendance',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed:
-            _isLoading
-                ? null
-                : () {
-                  _saveAttendance();
-                },
-        label: const Text('Save Attendance'),
-        icon: const Icon(Icons.check),
       ),
     );
   }
@@ -493,6 +552,37 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           ),
           const SizedBox(height: 4),
           Text(label, style: TextStyle(color: color, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusCount(String status, Color color) {
+    final count = _attendanceStatus.values.where((s) => s == status).length;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            count.toString(),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
@@ -527,5 +617,43 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         );
       },
     );
+  }
+
+  void _handleNavigation(BuildContext context, int index) {
+    // Navigate to the appropriate screen
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ClassSelectionScreen()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AttendanceSummaryScreen(),
+          ),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SyncStatusScreen()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+        );
+        break;
+    }
   }
 }

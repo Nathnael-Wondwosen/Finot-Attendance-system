@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../domain/entities/class_entity.dart';
 import '../../domain/entities/student_entity.dart';
-import '../../domain/entities/attendance_entity.dart';
 
 class RemoteDataSource {
   final Dio _dio;

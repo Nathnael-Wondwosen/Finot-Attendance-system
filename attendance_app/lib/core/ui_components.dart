@@ -1,225 +1,224 @@
 import 'package:flutter/material.dart';
-import 'theme.dart';
-import 'responsive_layout.dart';
 
-class CustomButton extends StatelessWidget {
+// Modern Button Component
+class ModernButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
-  final ButtonStyle? style;
-  final bool isOutlined;
   final IconData? icon;
+  final Color? backgroundColor;
+  final Color? textColor;
   final double? width;
+  final double? height;
 
-  const CustomButton({
-    super.key,
+  const ModernButton({
+    Key? key,
     required this.text,
     this.onPressed,
-    this.style,
-    this.isOutlined = false,
     this.icon,
+    this.backgroundColor,
+    this.textColor,
     this.width,
-  });
+    this.height,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    Widget button;
-
-    if (isOutlined) {
-      button = OutlinedButton.icon(
-        onPressed: onPressed,
-        icon: icon != null ? Icon(icon) : const SizedBox.shrink(),
-        label: Text(text),
-        style: style,
-      );
-    } else {
-      button = ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: icon != null ? Icon(icon) : const SizedBox.shrink(),
-        label: Text(text),
-        style: style,
-      );
-    }
-
-    if (width != null) {
-      return SizedBox(width: width, child: button);
-    }
-
-    return button;
-  }
-}
-
-class CustomCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsets? padding;
-  final Color? color;
-  final double? elevation;
-  final VoidCallback? onTap;
-  final ShapeBorder? shape;
-  final bool isResponsive;
-
-  const CustomCard({
-    super.key,
-    required this.child,
-    this.padding,
-    this.color,
-    this.elevation,
-    this.onTap,
-    this.shape,
-    this.isResponsive = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    EdgeInsets effectivePadding =
-        padding ??
-        (isResponsive
-            ? EdgeInsets.symmetric(
-              horizontal: ScreenSize.isSmallScreen(context) ? 12.0 : 16.0,
-              vertical: ScreenSize.isSmallScreen(context) ? 12.0 : 16.0,
-            )
-            : const EdgeInsets.all(16.0));
-
-    return Card(
-      color: color,
-      elevation: elevation ?? 2,
-      shape:
-          shape ??
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
+    final theme = Theme.of(context);
+    final primary = backgroundColor ?? theme.colorScheme.primary;
+    final fg = textColor ?? theme.colorScheme.onPrimary;
+    return Container(
+      width: width,
+      height: height ?? 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primary.withOpacity(0.95), primary.withOpacity(0.78)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(padding: effectivePadding, child: child),
+        boxShadow: [
+          BoxShadow(
+            color: primary.withOpacity(0.25),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: fg),
+              const SizedBox(width: 8),
+            ],
+            Text(
+              text,
+              style: TextStyle(
+                color: fg,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class CustomTextField extends StatelessWidget {
-  final String label;
-  final String? hint;
-  final TextEditingController? controller;
-  final TextInputType? keyboardType;
-  final String? Function(String?)? validator;
-  final void Function(String)? onChanged;
-  final bool obscureText;
-  final Widget? prefixIcon;
-  final Widget? suffixIcon;
+// Modern Card Component
+class ModernCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? margin;
+  final EdgeInsetsGeometry? padding;
+  final Color? color;
+  final double? borderRadius;
+  final BoxShadow? shadow;
 
-  const CustomTextField({
-    super.key,
-    required this.label,
-    this.hint,
-    this.controller,
-    this.keyboardType,
-    this.validator,
-    this.onChanged,
-    this.obscureText = false,
-    this.prefixIcon,
-    this.suffixIcon,
-  });
+  const ModernCard({
+    Key? key,
+    required this.child,
+    this.margin,
+    this.padding,
+    this.color,
+    this.borderRadius,
+    this.shadow,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          validator: validator,
-          onChanged: onChanged,
-          obscureText: obscureText,
-          decoration: InputDecoration(
-            hintText: hint,
-            prefixIcon: prefixIcon,
-            suffixIcon: suffixIcon,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Colors.grey),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppTheme.primaryColor,
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-      ],
+    final theme = Theme.of(context);
+    final surface = color ?? theme.cardColor ?? theme.colorScheme.surface;
+    final borderColor = theme.dividerColor.withOpacity(0.08);
+    return Container(
+      margin: margin ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(borderRadius ?? 14),
+        border: Border.all(color: borderColor),
+      ),
+      child: Padding(
+        padding: padding ?? const EdgeInsets.all(16),
+        child: child,
+      ),
     );
   }
 }
 
-class StatusChip extends StatelessWidget {
-  final String text;
+// Status Indicator Component
+class StatusIndicator extends StatelessWidget {
+  final String status;
   final Color color;
-  final Color? textColor;
-  final EdgeInsets padding;
-  final double? fontSize;
+  final bool showIcon;
 
-  const StatusChip({
-    super.key,
-    required this.text,
+  const StatusIndicator({
+    Key? key,
+    required this.status,
     required this.color,
-    this.textColor,
-    this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-    this.fontSize,
-  });
+    this.showIcon = true,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: padding,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: textColor ?? color,
-          fontWeight: FontWeight.w600,
-          fontSize: fontSize ?? 12,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showIcon)
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          if (showIcon) const SizedBox(width: 6),
+          Text(
+            status,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class ResponsiveWidget extends StatelessWidget {
-  final Widget mobile;
-  final Widget? tablet;
-  final Widget desktop;
+// Modern Text Field
+class ModernTextField extends StatelessWidget {
+  final String hintText;
+  final IconData? prefixIcon;
+  final TextEditingController? controller;
+  final TextInputType? keyboardType;
+  final bool obscureText;
+  final String? Function(String?)? validator;
+  final Function(String)? onChanged;
 
-  const ResponsiveWidget({
-    super.key,
-    required this.mobile,
-    this.tablet,
-    required this.desktop,
-  });
+  const ModernTextField({
+    Key? key,
+    required this.hintText,
+    this.prefixIcon,
+    this.controller,
+    this.keyboardType,
+    this.obscureText = false,
+    this.validator,
+    this.onChanged,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    if (screenWidth >= 1100) {
-      return desktop;
-    } else if (screenWidth >= 650) {
-      return tablet ?? mobile;
-    } else {
-      return mobile;
-    }
+    final theme = Theme.of(context);
+    final fill = theme.cardColor.withOpacity(0.04);
+    final primary = theme.colorScheme.primary;
+    final textStyle =
+        theme.textTheme.bodyMedium?.copyWith(
+          color: theme.textTheme.bodyMedium?.color,
+        ) ??
+        const TextStyle(color: Colors.black);
+    return Container(
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.08)),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        obscureText: obscureText,
+        onChanged: onChanged,
+        style: textStyle,
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: textStyle.copyWith(
+            color: textStyle.color?.withOpacity(0.6),
+          ),
+          prefixIcon:
+              prefixIcon != null ? Icon(prefixIcon, color: primary) : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
   }
 }

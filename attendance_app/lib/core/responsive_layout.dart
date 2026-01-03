@@ -13,16 +13,35 @@ class ResponsiveLayout extends StatelessWidget {
   });
 
   static bool isMobile(BuildContext context) {
-    return MediaQuery.of(context).size.width < 650;
+    return MediaQuery.of(context).size.width < 600;
   }
 
   static bool isTablet(BuildContext context) {
-    return MediaQuery.of(context).size.width >= 650 &&
+    return MediaQuery.of(context).size.width >= 600 &&
         MediaQuery.of(context).size.width < 1100;
   }
 
   static bool isDesktop(BuildContext context) {
     return MediaQuery.of(context).size.width >= 1100;
+  }
+
+  static bool isSmallMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width < 400;
+  }
+
+  static bool isLargeMobile(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 400 &&
+        MediaQuery.of(context).size.width < 600;
+  }
+
+  static bool isSmallTablet(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 600 &&
+        MediaQuery.of(context).size.width < 800;
+  }
+
+  static bool isLargeTablet(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 800 &&
+        MediaQuery.of(context).size.width < 1100;
   }
 
   @override
@@ -31,7 +50,7 @@ class ResponsiveLayout extends StatelessWidget {
       builder: (context, constraints) {
         if (constraints.maxWidth >= 1100) {
           return desktop;
-        } else if (constraints.maxWidth >= 650) {
+        } else if (constraints.maxWidth >= 600) {
           return tablet ?? mobile;
         } else {
           return mobile;
