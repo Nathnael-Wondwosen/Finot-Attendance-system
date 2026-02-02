@@ -2,6 +2,8 @@ import '../domain/repositories/sync_repository.dart';
 
 class SyncService {
   final SyncRepository _syncRepository;
+  DateTime? _lastSyncTime;
+  String? _lastError;
 
   SyncService(this._syncRepository);
 
@@ -29,9 +31,15 @@ class SyncService {
   // Upload attendance data from local to remote
   Future<bool> uploadAttendanceData() async {
     try {
-      return await _syncRepository.uploadAttendanceData();
+      final ok = await _syncRepository.uploadAttendanceData();
+      if (ok) {
+        _lastSyncTime = DateTime.now();
+        _lastError = null;
+      }
+      return ok;
     } catch (e) {
       print('Error uploading attendance data: $e');
+      _lastError = e.toString();
       return false;
     }
   }
@@ -57,10 +65,13 @@ class SyncService {
         return false;
       }
 
+      _lastSyncTime = DateTime.now();
+      _lastError = null;
       print('Full sync completed successfully');
       return true;
     } catch (e) {
       print('Error during full sync: $e');
+      _lastError = e.toString();
       return false;
     }
   }
@@ -109,7 +120,8 @@ class SyncService {
     return {
       'unsyncedCount': unsyncedCount,
       'isOnline': online,
-      'lastSyncTime': DateTime.now(),
+      'lastSyncTime': _lastSyncTime,
+      'lastError': _lastError,
     };
   }
 

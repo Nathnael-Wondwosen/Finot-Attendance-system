@@ -1,5 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
+import '../../core/typography.dart';
 
 /// =======================================================
 /// CONFIG
@@ -34,6 +36,7 @@ class SidebarScaffold extends StatefulWidget {
   final Color? primaryColor;
   final Widget? sidebarFooter;
   final List<Widget>? actions;
+  final bool showHeader;
 
   const SidebarScaffold({
     super.key,
@@ -45,6 +48,7 @@ class SidebarScaffold extends StatefulWidget {
     this.primaryColor,
     this.sidebarFooter,
     this.actions,
+    this.showHeader = true,
   });
 
   @override
@@ -123,6 +127,7 @@ class _SidebarScaffoldState extends State<SidebarScaffold>
   Widget build(BuildContext context) {
     final primary = widget.primaryColor ?? Theme.of(context).primaryColor;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final topPadding = MediaQuery.of(context).padding.top;
 
     return Scaffold(
       body: Stack(
@@ -134,14 +139,17 @@ class _SidebarScaffoldState extends State<SidebarScaffold>
             onHorizontalDragEnd: _onDragEnd,
             child: Column(
               children: [
-                _Header(
-                  title: widget.title,
-                  primary: primary,
-                  isDark: isDark,
-                  animation: _animation,
-                  onMenu: _toggle,
-                  actions: widget.actions,
-                ),
+                if (widget.showHeader)
+                  _Header(
+                    title: widget.title,
+                    primary: primary,
+                    isDark: isDark,
+                    animation: _animation,
+                    onMenu: _toggle,
+                    actions: widget.actions,
+                  )
+                else
+                  SizedBox(height: topPadding),
                 Expanded(child: widget.child),
               ],
             ),
@@ -183,6 +191,7 @@ class _SidebarScaffoldState extends State<SidebarScaffold>
                   },
                   primaryColor: primary,
                   footer: widget.sidebarFooter,
+                  showHeader: widget.showHeader,
                 ),
               );
             },
@@ -215,7 +224,8 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topInset = MediaQuery.of(context).padding.top;
+    final mediaQuery = MediaQuery.of(context);
+    final topInset = mediaQuery.padding.top;
     final statusBarHeight =
         topInset > 0 ? topInset : 24.0; // Default to 24 if no inset
 
@@ -305,7 +315,7 @@ class _Header extends StatelessWidget {
 }
 
 /// =======================================================
-/// SIDEBAR DRAWER
+/// SIDEBAR DRAWER (UI REMODELED TO MATCH PROVIDED MOCKUP)
 /// =======================================================
 class SidebarDrawer extends StatelessWidget {
   final double width;
@@ -314,6 +324,7 @@ class SidebarDrawer extends StatelessWidget {
   final ValueChanged<int> onNavigationChanged;
   final Color primaryColor;
   final Widget? footer;
+  final bool showHeader;
 
   const SidebarDrawer({
     super.key,
@@ -323,170 +334,421 @@ class SidebarDrawer extends StatelessWidget {
     required this.onNavigationChanged,
     required this.primaryColor,
     this.footer,
+    this.showHeader = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final theme = Theme.of(context);
-    final backgroundColor = theme.scaffoldBackgroundColor;
+    const headerDeep = Color(0xFF0E5C66);
+    const headerBright = Color(0xFF0B7A83);
+    const faintDivider = Color(0xFFE6ECF2);
+    const subtleText = Color(0xFF516173);
+    final secondaryText = Colors.black.withOpacity(0.65);
+    final accent = primaryColor;
 
     return SizedBox(
       width: width,
       child: Container(
         decoration: BoxDecoration(
-          color: backgroundColor, // Use theme background color
+          color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 16,
               spreadRadius: 2,
-              offset: const Offset(12, 0),
+              offset: const Offset(3, 2),
             ),
           ],
         ),
         child: SafeArea(
           child: Column(
             children: [
+              if (showHeader)
+                _SidebarHeader(
+                  deepColor: headerDeep,
+                  brightColor: headerBright,
+                  textColor: Colors.white,
+                ),
+
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
+                  children: [
+                    if (navigationItems.isNotEmpty)
+                      _PrimaryNavCard(
+                        item: navigationItems.first,
+                        selected: currentIndex == 0,
+                        accent: accent,
+                        secondaryText: secondaryText,
+                        onTap: () => onNavigationChanged(0),
+                        showOnlineDot: true,
+                      ),
+                    if (navigationItems.length > 1)
+                      _PrimaryNavCard(
+                        item: navigationItems[1],
+                        selected: currentIndex == 1,
+                        accent: accent,
+                        secondaryText: secondaryText,
+                        onTap: () => onNavigationChanged(1),
+                        showDropdown: true,
+                      ),
+
+                    const SizedBox(height: 10),
+                    const Divider(
+                      height: 26,
+                      color: faintDivider,
+                      thickness: 1,
+                    ),
+
+                    ...navigationItems
+                        .asMap()
+                        .entries
+                        .skip(2)
+                        .map(
+                          (entry) => _SlimNavTile(
+                            item: entry.value,
+                            selected: currentIndex == entry.key,
+                            onTap: () => onNavigationChanged(entry.key),
+                            accent: accent,
+                            subtleText: subtleText,
+                            secondaryText: secondaryText,
+                          ),
+                        )
+                        .toList(),
+
+                    if (footer != null) ...[const SizedBox(height: 8), footer!],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// =======================================================
+/// HEADER WITH GLOW + OVERLAY CIRCLES (MATCHES MOCKUP)
+/// =======================================================
+class _SidebarHeader extends StatelessWidget {
+  final Color deepColor;
+  final Color brightColor;
+  final Color textColor;
+
+  const _SidebarHeader({
+    required this.deepColor,
+    required this.brightColor,
+    required this.textColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 22, 18, 22),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [brightColor, deepColor],
+        ),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+      ),
+      child: Stack(
+        children: [
+          // Floating circle glow
+          Positioned(
+            right: -36,
+            top: -18,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.12),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 12,
+            top: 42,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.06),
+              ),
+            ),
+          ),
+
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 24),
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.45)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.20),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      primaryColor.withOpacity(0.9),
-                      primaryColor.withOpacity(0.7),
-                      primaryColor.withOpacity(0.5),
-                    ],
-                  ),
-                  border: const Border(
-                    bottom: BorderSide(color: Colors.white24),
+                    colors: [Colors.white.withOpacity(0.15), Colors.white24],
                   ),
                 ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/lg.png',
+                    fit: BoxFit.cover,
+                    errorBuilder:
+                        (_, __, ___) => Icon(
+                          Icons.school,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Place for logo
+                    Text(
+                      'የሞቅ ጎረም',
+                      style: AppTextStyles.titleLarge.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'የስነ ምግባር ት/ቤት መረጃ',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: textColor.withOpacity(0.82),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     Container(
-                      width: 80,
-                      height: 80,
-                      margin: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.white24,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white30),
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.25),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.school,
-                        color: Colors.white70,
-                        size: 40,
-                      ), // This will be replaced with your actual logo
-                    ),
-                    Text(
-                      'Finot Attendance',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.home_rounded, color: textColor, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            'መነጽር ገጽ',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: textColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.lightGreenAccent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'የፍኖተ ሰላም ሰንበት ት/ቤት',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
                     ),
                   ],
                 ),
               ),
-
-              /// NAV ITEMS
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  itemCount: navigationItems.length,
-                  itemBuilder: (_, i) {
-                    final item = navigationItems[i];
-                    final selected = i == currentIndex;
-
-                    return Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: () => onNavigationChanged(i),
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                selected
-                                    ? primaryColor.withOpacity(0.2)
-                                    : Colors.transparent,
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                item.icon,
-                                color:
-                                    selected
-                                        ? primaryColor
-                                        : isDark
-                                        ? Colors.white70
-                                        : Colors.grey[600],
-                              ),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Text(
-                                  item.title,
-                                  style: TextStyle(
-                                    fontWeight:
-                                        selected
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                    color:
-                                        selected
-                                            ? primaryColor
-                                            : isDark
-                                            ? Colors.white
-                                            : Colors.black87,
-                                  ),
-                                ),
-                              ),
-                              if (item.badgeCount != null &&
-                                  item.badgeCount! > 0)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    item.badgeCount.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              if (footer != null)
-                Padding(padding: const EdgeInsets.all(16), child: footer!),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// =======================================================
+/// PRIMARY CARD STYLE (TOP TWO ROWS IN MOCKUP)
+/// =======================================================
+class _PrimaryNavCard extends StatelessWidget {
+  final NavigationItem item;
+  final bool selected;
+  final bool showOnlineDot;
+  final bool showDropdown;
+  final Color accent;
+  final Color secondaryText;
+  final VoidCallback onTap;
+
+  const _PrimaryNavCard({
+    required this.item,
+    required this.selected,
+    required this.accent,
+    required this.secondaryText,
+    required this.onTap,
+    this.showOnlineDot = false,
+    this.showDropdown = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? accent.withOpacity(0.10) : const Color(0xFFF7FAFB),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? accent : Colors.grey.withOpacity(0.18),
+            width: 1.1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? accent.withOpacity(0.20) : Colors.white,
+                border: Border.all(color: accent.withOpacity(0.30)),
+              ),
+              child: Icon(item.icon, color: accent, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                item.title,
+                style: AppTextStyles.titleSmall.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1C2A35),
+                ),
+              ),
+            ),
+            if (showOnlineDot)
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: Colors.tealAccent,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.tealAccent.withOpacity(0.6),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+              ),
+            if (showDropdown)
+              Icon(Icons.keyboard_arrow_down_rounded, color: secondaryText),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// =======================================================
+/// SLIM LIST TILE STYLE (LOWER SECTION IN MOCKUP)
+/// =======================================================
+class _SlimNavTile extends StatelessWidget {
+  final NavigationItem item;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color accent;
+  final Color subtleText;
+  final Color secondaryText;
+
+  const _SlimNavTile({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+    required this.accent,
+    required this.subtleText,
+    required this.secondaryText,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? accent.withOpacity(0.06) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    selected
+                        ? accent.withOpacity(0.18)
+                        : Colors.grey.withOpacity(0.10),
+              ),
+              child: Icon(
+                item.icon,
+                size: 18,
+                color: selected ? accent : subtleText,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                item.title,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: selected ? accent : secondaryText,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+            if (item.badgeCount != null && item.badgeCount! > 0)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.redAccent,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  item.badgeCount.toString(),
+                  style: AppTextStyles.labelSmall.copyWith(color: Colors.white),
+                ),
+              ),
+          ],
         ),
       ),
     );

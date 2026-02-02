@@ -4,6 +4,7 @@ import '../../domain/repositories/sync_repository.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../domain/repositories/class_repository.dart';
 import '../../domain/repositories/student_repository.dart';
+import '../models/attendance_model.dart';
 
 class SyncRepositoryImpl implements SyncRepository {
   final LocalDataSource _localDataSource;
@@ -21,8 +22,9 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<void> syncData() async {
     try {
-      // This would implement the full sync process
-      // For now, it's a placeholder
+      // First upload anything pending, then refresh the local cache
+      await uploadAttendanceData();
+      await downloadAllClasses();
     } catch (e) {
       print('Error syncing data: $e');
       rethrow;
@@ -40,9 +42,8 @@ class SyncRepositoryImpl implements SyncRepository {
 
   @override
   Future<int> getPendingSyncCount() async {
-    // This would return the count of unsynced records
-    // For now, returning 0 as a placeholder
-    return 0;
+    final pending = await _localDataSource.getUnsyncedAttendance();
+    return pending.length;
   }
 
   @override
@@ -159,10 +160,39 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<bool> uploadAttendanceData() async {
     try {
-      // Get unsynced attendance records from local storage
-      // For now, we'll just return success
-      // In a real implementation, we would get unsynced records and upload them
-      return true;
+      final List<AttendanceModel> pending =
+          await _localDataSource.getUnsyncedAttendance();
+
+      if (pending.isEmpty) {
+        print('SyncRepositoryImpl: No pending attendance to upload');
+        return true;
+      }
+
+      final payload = pending
+          .map((record) => {
+                'local_id': record.id,
+                'student_id': record.studentId,
+                'class_id': record.classId,
+                'section_id': record.sectionId,
+                'status': record.status,
+                'date': record.date.toIso8601String(),
+                'notes': record.notes,
+              })
+          .toList();
+
+      final success = await _remoteDataSource.submitAttendance(payload);
+
+      if (success) {
+        for (final record in pending) {
+          await _localDataSource.updateAttendanceSyncStatus(record.id, true);
+        }
+        print('SyncRepositoryImpl: Uploaded and marked '
+            '${pending.length} attendance records as synced');
+      } else {
+        print('SyncRepositoryImpl: Remote refused attendance upload');
+      }
+
+      return success;
     } catch (e) {
       print('Error uploading attendance data: $e');
       return false;

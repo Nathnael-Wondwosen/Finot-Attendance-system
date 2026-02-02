@@ -8,6 +8,8 @@ import 'sync_status_screen.dart';
 import 'settings_screen.dart';
 import 'sidebar_drawer.dart';
 import 'top_scaffold.dart';
+import '../../core/theme.dart';
+import '../../core/ui_components.dart';
 
 /// =======================================================
 /// MAIN NAVIGATION SCREEN
@@ -30,13 +32,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _selectedIndex = widget.initialIndex;
   }
 
-  /// SINGLE SOURCE OF TRUTH (SIDEBAR + TABS) - MODERN ICONS
+  /// SINGLE SOURCE OF TRUTH (SIDEBAR + TABS) - MINIMALIST ICONS
   final List<NavigationItem> _navigationItems = const [
-    NavigationItem(title: 'Home', icon: Icons.dashboard_rounded),
-    NavigationItem(title: 'Classes', icon: Icons.school_rounded),
-    NavigationItem(title: 'Attendance', icon: Icons.check_circle_rounded),
-    NavigationItem(title: 'Sync', icon: Icons.cloud_sync_rounded),
-    NavigationItem(title: 'Settings', icon: Icons.settings_rounded),
+    NavigationItem(title: 'Dashboard', icon: Icons.home_outlined),
+    NavigationItem(title: 'Classes', icon: Icons.school_outlined),
+    NavigationItem(title: 'Attendance', icon: Icons.check_box_outlined),
+    NavigationItem(title: 'Sync', icon: Icons.sync_alt_outlined),
+    NavigationItem(title: 'Settings', icon: Icons.settings_outlined),
   ];
 
   final List<Widget> _screens = const [
@@ -50,42 +52,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
+    final bool hideHeader = _selectedIndex == 0;
+    final mediaQuery = MediaQuery.of(context);
+    final screenWidth = mediaQuery.size.width;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bool showSidebar = constraints.maxWidth >= 768;
+    final bool showSidebar = screenWidth >= 768;
 
-        return Scaffold(
-          body:
-              showSidebar
-                  ? SidebarScaffold(
-                    title: _navigationItems[_selectedIndex].title,
-                    navigationItems: _navigationItems,
-                    currentIndex: _selectedIndex,
-                    primaryColor: primary,
-                    onNavigationChanged: (index) {
-                      setState(() => _selectedIndex = index);
-                    },
-                    child: IndexedStack(
-                      index: _selectedIndex,
-                      children: _screens,
-                    ),
-                  )
-                  : TopScaffold(
-                    title: _navigationItems[_selectedIndex].title,
-                    navigationItems: _navigationItems,
-                    currentIndex: _selectedIndex,
-                    primaryColor: primary,
-                    onNavigationChanged: (index) {
-                      setState(() => _selectedIndex = index);
-                    },
-                    child: IndexedStack(
-                      index: _selectedIndex,
-                      children: _screens,
-                    ),
-                  ),
-        );
-      },
+    return Scaffold(
+      body:
+          showSidebar
+              ? SidebarScaffold(
+                title: _navigationItems[_selectedIndex].title,
+                navigationItems: _navigationItems,
+                currentIndex: _selectedIndex,
+                primaryColor: primary,
+                showHeader: !hideHeader,
+                onNavigationChanged: (index) {
+                  setState(() => _selectedIndex = index);
+                },
+                child: IndexedStack(index: _selectedIndex, children: _screens),
+              )
+              : TopScaffold(
+                title: _navigationItems[_selectedIndex].title,
+                navigationItems: _navigationItems,
+                currentIndex: _selectedIndex,
+                primaryColor: primary,
+                showHeader: !hideHeader,
+                onNavigationChanged: (index) {
+                  setState(() => _selectedIndex = index);
+                },
+                child: IndexedStack(index: _selectedIndex, children: _screens),
+              ),
     );
   }
 }
@@ -104,11 +101,11 @@ class FuturisticBottomTabs extends StatelessWidget {
   });
 
   static const List<_TabItem> _items = [
-    _TabItem(label: 'Dashboard', icon: Icons.dashboard_rounded),
-    _TabItem(label: 'Classes', icon: Icons.school_rounded),
-    _TabItem(label: 'Attendance', icon: Icons.check_circle_rounded),
-    _TabItem(label: 'Sync', icon: Icons.cloud_sync_rounded),
-    _TabItem(label: 'Settings', icon: Icons.settings_rounded),
+    _TabItem(label: 'Dashboard', icon: Icons.home_outlined),
+    _TabItem(label: 'Classes', icon: Icons.school_outlined),
+    _TabItem(label: 'Attendance', icon: Icons.check_box_outlined),
+    _TabItem(label: 'Sync', icon: Icons.sync_alt_outlined),
+    _TabItem(label: 'Settings', icon: Icons.settings_outlined),
   ];
 
   @override

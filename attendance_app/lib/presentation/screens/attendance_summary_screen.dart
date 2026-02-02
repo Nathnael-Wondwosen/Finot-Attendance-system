@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/ui_components.dart';
 import '../../domain/entities/class_entity.dart';
 import '../../domain/entities/student_entity.dart';
 import '../../domain/entities/attendance_entity.dart';
@@ -182,132 +183,123 @@ class _AttendanceSummaryScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child:
-          _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _showIndividualRecords
-              ? _buildIndividualAttendanceView()
-              : _attendanceRecords.isEmpty
-              ? const Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      size: 80,
-                      color: Colors.grey,
-                    ),
-                    SizedBox(height: 16),
-                    Text(
-                      'No attendance records found',
-                      style: TextStyle(fontSize: 18, color: Colors.grey),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Take attendance to see records here',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              )
-              : RefreshIndicator(
-                onRefresh: _loadAttendanceData,
-                child: ListView.builder(
-                  itemCount: _attendanceRecords.length,
-                  itemBuilder: (context, index) {
-                    final record = _attendanceRecords[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        leading: Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+    final theme = Theme.of(context);
+    return SoftGradientBackground(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child:
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _showIndividualRecords
+                ? _buildIndividualAttendanceView()
+                : _attendanceRecords.isEmpty
+                ? _EmptySummary(theme: theme)
+                : RefreshIndicator(
+                  onRefresh: _loadAttendanceData,
+                  child: ListView.builder(
+                    itemCount: _attendanceRecords.length,
+                    itemBuilder: (context, index) {
+                      final record = _attendanceRecords[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        color: theme.cardColor.withOpacity(0.9),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: theme.dividerColor.withOpacity(0.12),
                           ),
-                          child: Center(
-                            child: Text(
-                              '${record.date.day}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
+                        ),
+                        elevation: 1,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          leading: Container(
+                            width: 52,
+                            height: 52,
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary.withOpacity(
+                                0.12,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.colorScheme.primary.withOpacity(
+                                  0.2,
+                                ),
+                              ),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${record.date.day}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.primary,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        title: Text(
-                          record.className,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
+                          title: Text(
+                            record.className,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        subtitle: Text(
-                          '${record.date.toString().split(' ')[0]} • ${record.presentCount + record.absentCount + record.lateCount} students',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${record.presentCount} Present',
-                              style: const TextStyle(
+                          subtitle: Text(
+                            '${record.date.toString().split(' ')[0]} • ${record.presentCount + record.absentCount + record.lateCount} students',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.textTheme.bodySmall?.color
+                                  ?.withOpacity(0.7),
+                            ),
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              _StatPill(
+                                label: 'Present',
+                                value: record.presentCount,
                                 color: Colors.green,
-                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${record.absentCount} Absent',
-                              style: const TextStyle(
+                              const SizedBox(height: 6),
+                              _StatPill(
+                                label: 'Absent',
+                                value: record.absentCount,
                                 color: Colors.red,
-                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${record.lateCount} Late',
-                              style: const TextStyle(
+                              const SizedBox(height: 6),
+                              _StatPill(
+                                label: 'Late',
+                                value: record.lateCount,
                                 color: Colors.orange,
-                                fontWeight: FontWeight.w600,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => DetailedAttendanceScreen(
+                                      record: record,
+                                      students: _students,
+                                      classes: _classes,
+                                    ),
+                              ),
+                            );
+                          },
                         ),
-                        onTap: () {
-                          // Navigate to detailed attendance view
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => DetailedAttendanceScreen(
-                                    record: record,
-                                    students: _students,
-                                    classes: _classes,
-                                  ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
+      ),
     );
   }
 
   Widget _buildIndividualAttendanceView() {
+    final theme = Theme.of(context);
     return RefreshIndicator(
       onRefresh: _loadAttendanceData,
       child: ListView.builder(
@@ -330,7 +322,12 @@ class _AttendanceSummaryScreenState
           final statusColor = _getStatusColor(attendance.status);
 
           return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            color: theme.cardColor.withOpacity(0.9),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: theme.dividerColor.withOpacity(0.12)),
+            ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -356,9 +353,8 @@ class _AttendanceSummaryScreenState
               ),
               title: Text(
                 student.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               subtitle: Column(
@@ -366,12 +362,16 @@ class _AttendanceSummaryScreenState
                 children: [
                   Text(
                     '${attendance.className ?? 'Unknown Class'}',
-                    style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${DateTime.parse(attendance.date).toString().split(' ')[0]} at ${DateTime.parse(attendance.date).toString().split(' ')[1].substring(0, 5)}',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.6),
+                    ),
                   ),
                 ],
               ),
@@ -411,6 +411,80 @@ class _AttendanceSummaryScreenState
       default:
         return Colors.grey;
     }
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _StatPill({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$value $label',
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptySummary extends StatelessWidget {
+  final ThemeData theme;
+  const _EmptySummary({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Icon(
+              Icons.check_circle_outline,
+              size: 36,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No attendance records yet',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Take attendance to see summaries here',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.textTheme.bodySmall?.color?.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -494,82 +568,114 @@ class DetailedAttendanceScreen extends ConsumerWidget {
           );
         }
 
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Date: ${record.date.toString().split(' ')[0]}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              '${record.className} - ${record.date.toString().split(' ')[0]}',
+            ),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Date: ${record.date.toString().split(' ')[0]}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildStatusSummary(
-                          'Present',
-                          record.presentCount,
-                          Colors.green,
-                        ),
-                        _buildStatusSummary(
-                          'Absent',
-                          record.absentCount,
-                          Colors.red,
-                        ),
-                        _buildStatusSummary(
-                          'Late',
-                          record.lateCount,
-                          Colors.orange,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Students (${attendanceDetails.length})',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: attendanceDetails.length,
-                  itemBuilder: (context, index) {
-                    final detail = attendanceDetails[index];
-                    final statusColor = _getStatusColor(detail.status);
-
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: ListTile(
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(20),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildStatusSummary(
+                            'Present',
+                            record.presentCount,
+                            Colors.green,
                           ),
-                          child: Center(
+                          _buildStatusSummary(
+                            'Absent',
+                            record.absentCount,
+                            Colors.red,
+                          ),
+                          _buildStatusSummary(
+                            'Late',
+                            record.lateCount,
+                            Colors.orange,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Students (${attendanceDetails.length})',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: attendanceDetails.length,
+                    itemBuilder: (context, index) {
+                      final detail = attendanceDetails[index];
+                      final statusColor = _getStatusColor(detail.status);
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: ListTile(
+                          leading: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Center(
+                              child: Text(
+                                detail.student.fullName
+                                    .substring(0, 1)
+                                    .toUpperCase(),
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            detail.student.fullName,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(
+                            detail.student.actualGrade ?? 'Grade not specified',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: statusColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             child: Text(
-                              detail.student.fullName
-                                  .substring(0, 1)
-                                  .toUpperCase(),
+                              detail.status.toUpperCase(),
                               style: TextStyle(
                                 color: statusColor,
                                 fontWeight: FontWeight.bold,
@@ -577,37 +683,12 @@ class DetailedAttendanceScreen extends ConsumerWidget {
                             ),
                           ),
                         ),
-                        title: Text(
-                          detail.student.fullName,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Text(
-                          detail.student.actualGrade ?? 'Grade not specified',
-                          style: const TextStyle(color: Colors.grey),
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            detail.status.toUpperCase(),
-                            style: TextStyle(
-                              color: statusColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

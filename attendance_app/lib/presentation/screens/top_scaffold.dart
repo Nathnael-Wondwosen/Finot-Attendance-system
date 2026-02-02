@@ -10,6 +10,7 @@ class TopScaffold extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onNavigationChanged;
   final Color? primaryColor;
+  final bool showHeader;
 
   const TopScaffold({
     super.key,
@@ -19,6 +20,7 @@ class TopScaffold extends StatelessWidget {
     required this.currentIndex,
     required this.onNavigationChanged,
     this.primaryColor,
+    this.showHeader = true,
   });
 
   @override
@@ -26,8 +28,9 @@ class TopScaffold extends StatelessWidget {
     final theme = Theme.of(context);
     final primary = primaryColor ?? theme.colorScheme.primary;
     final isDark = theme.brightness == Brightness.dark;
-    final topInset = MediaQuery.of(context).padding.top;
-    final bottomInset = MediaQuery.of(context).padding.bottom;
+    final mediaQuery = MediaQuery.of(context);
+    final topInset = mediaQuery.padding.top;
+    final bottomInset = mediaQuery.padding.bottom;
 
     // Theme-driven sizes and styles for bottom navigation
     final iconThemeSize = IconTheme.of(context).size ?? 24.0;
@@ -89,67 +92,69 @@ class TopScaffold extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Header (status bar area is transparent — shadow applied only below the status bar)
-          Container(
-            height: 64 + topInset,
-            color:
-                primary, // show the same primary behind the status bar without shadow
-            child: Container(
-              margin: EdgeInsets.only(top: topInset),
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: primary,
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(16),
+          // Header (optional)
+          if (showHeader)
+            Container(
+              height: 64 + topInset,
+              color: primary,
+              child: Container(
+                margin: EdgeInsets.only(top: topInset),
+                height: 64,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: primary,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(16),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Builder(
-                    builder:
-                        (ctx) => IconButton(
-                          icon: Icon(
-                            Icons.menu,
-                            color: theme.colorScheme.onPrimary,
+                child: Row(
+                  children: [
+                    Builder(
+                      builder:
+                          (ctx) => IconButton(
+                            icon: Icon(
+                              Icons.menu,
+                              color: theme.colorScheme.onPrimary,
+                            ),
+                            onPressed: () => Scaffold.of(ctx).openDrawer(),
                           ),
-                          onPressed: () => Scaffold.of(ctx).openDrawer(),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.w700,
                         ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: theme.colorScheme.onPrimary,
-                        fontWeight: FontWeight.w700,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor: theme.colorScheme.onPrimary.withOpacity(
-                      0.15,
+                    const SizedBox(width: 8),
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: theme.colorScheme.onPrimary.withOpacity(
+                        0.15,
+                      ),
+                      child: Icon(
+                        Icons.person,
+                        color: theme.colorScheme.onPrimary,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.person,
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
+            )
+          else
+            SizedBox(height: topInset),
 
           // Content
           Expanded(child: child),
@@ -175,6 +180,9 @@ class TopScaffold extends StatelessWidget {
                         selected: selected,
                         label: '${item.title} tab',
                         child: InkWell(
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
                           onTap: () => onNavigationChanged(index),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 220),
@@ -345,41 +353,6 @@ class TopScaffold extends StatelessWidget {
                       ),
                     );
                   }),
-                ),
-
-                // Animated global indicator positioned under the selected tab
-                Align(
-                  alignment: Alignment(0, 1.0),
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: bottomInset > 0 ? bottomInset * 0.1 : 6,
-                    ),
-                    child: SizedBox(
-                      height: 8,
-                      child: AnimatedAlign(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOutCubic,
-                        alignment: Alignment(indicatorAlignX, 0),
-                        child: FractionallySizedBox(
-                          widthFactor: indicatorWidthFactor,
-                          child: Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              color: primary,
-                              borderRadius: BorderRadius.circular(2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: primary.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ),
               ],
             ),

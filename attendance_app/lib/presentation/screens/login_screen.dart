@@ -29,9 +29,14 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _isLoading = true);
 
       await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
       Navigator.of(context).pushReplacementNamed(Routes.mainNavigation);
 
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -40,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -119,9 +124,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       key: _formKey,
                       child: Column(
                         children: [
-                          CustomTextField(
+                          CustomInputField(
                             label: 'Email or Phone',
-                            hint: 'admin@example.com or 123456789',
+                            hintText: 'admin@example.com or 123456789',
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             validator:
@@ -131,9 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         : null,
                           ),
                           const SizedBox(height: 16),
-                          CustomTextField(
+                          CustomInputField(
                             label: 'Password',
-                            hint: 'Enter any password',
+                            hintText: 'Enter any password',
                             controller: _passwordController,
                             obscureText: true,
                             validator:

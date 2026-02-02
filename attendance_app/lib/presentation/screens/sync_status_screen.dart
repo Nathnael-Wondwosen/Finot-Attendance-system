@@ -2,29 +2,66 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui_components.dart';
 import '../providers/app_provider.dart';
 
-class SyncStatusScreen extends ConsumerWidget {
+class SyncStatusScreen extends ConsumerStatefulWidget {
   const SyncStatusScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SectionTitle(title: 'Connection Status'),
-            const SizedBox(height: 12),
-            _ConnectionStatusCard(ref),
-            const SizedBox(height: 24),
-            _SectionTitle(title: 'Synchronization'),
-            const SizedBox(height: 12),
-            _SyncStatusCard(ref),
-            const Spacer(),
-            _SyncActions(ref),
-          ],
+  ConsumerState<SyncStatusScreen> createState() => _SyncStatusScreenState();
+}
+
+class _SyncStatusScreenState extends ConsumerState<SyncStatusScreen> {
+  late Future<Map<String, dynamic>> _statusFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _statusFuture = ref.read(syncServiceProvider).getSyncStatus();
+  }
+
+  void _refreshStatus() {
+    setState(() {
+      _statusFuture = ref.read(syncServiceProvider).getSyncStatus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftGradientBackground(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              _refreshStatus();
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const _SectionTitle(title: 'Connection Status'),
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Refresh status',
+                      onPressed: _refreshStatus,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                _ConnectionStatusCard(ref, onRefresh: _refreshStatus),
+                const SizedBox(height: 24),
+                const _SectionTitle(title: 'Synchronization'),
+                const SizedBox(height: 12),
+                _SyncStatusCard(ref, future: _statusFuture),
+                const SizedBox(height: 16),
+                _SyncActions(ref, onCompleted: _refreshStatus),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -56,9 +93,10 @@ class _SectionTitle extends StatelessWidget {
 /// CONNECTION STATUS CARD
 /// =======================================================
 class _ConnectionStatusCard extends ConsumerWidget {
-  const _ConnectionStatusCard(this.ref);
+  const _ConnectionStatusCard(this.ref, {required this.onRefresh});
 
   final WidgetRef ref;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef _) {
@@ -82,6 +120,12 @@ class _ConnectionStatusCard extends ConsumerWidget {
                   ),
                 ),
               ),
+              IconButton(
+                icon: const Icon(Icons.sync),
+                color: Colors.grey,
+                tooltip: 'Recheck',
+                onPressed: onRefresh,
+              ),
               Icon(
                 connected ? Icons.wifi_rounded : Icons.wifi_off_rounded,
                 color: connected ? Colors.green : Colors.red,
@@ -98,15 +142,16 @@ class _ConnectionStatusCard extends ConsumerWidget {
 /// SYNC STATUS CARD
 /// =======================================================
 class _SyncStatusCard extends ConsumerWidget {
-  const _SyncStatusCard(this.ref);
+  const _SyncStatusCard(this.ref, {required this.future});
 
   final WidgetRef ref;
+  final Future<Map<String, dynamic>> future;
 
   @override
   Widget build(BuildContext context, WidgetRef _) {
     return _GlassCard(
       child: FutureBuilder<Map<String, dynamic>>(
-        future: ref.read(syncServiceProvider).getSyncStatus(),
+        future: future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Padding(
@@ -117,7 +162,12 @@ class _SyncStatusCard extends ConsumerWidget {
 
           final data =
               snapshot.data ??
-              {'unsyncedCount': 0, 'isOnline': false, 'lastSyncTime': null};
+              {
+                'unsyncedCount': 0,
+                'isOnline': false,
+                'lastSyncTime': null,
+                'lastError': null,
+              };
 
           return Column(
             children: [
@@ -139,16 +189,34 @@ class _SyncStatusCard extends ConsumerWidget {
               _InfoRow(
                 icon: Icons.access_time_rounded,
                 label: 'Last Sync',
-                value:
-                    data['lastSyncTime'] != null
-                        ? data['lastSyncTime'].toString()
-                        : 'Never',
+                value: _formatDateTime(data['lastSyncTime']),
               ),
+              if (data['lastError'] != null) ...[
+                const Divider(height: 24),
+                _InfoRow(
+                  icon: Icons.error_outline,
+                  label: 'Last Error',
+                  value: data['lastError'],
+                ),
+              ],
             ],
           );
         },
       ),
     );
+  }
+
+  String _formatDateTime(dynamic dt) {
+    DateTime? parsed;
+    if (dt is DateTime) {
+      parsed = dt;
+    } else if (dt is String) {
+      parsed = DateTime.tryParse(dt);
+    }
+    if (parsed == null) return 'Never';
+    final safe = parsed.toLocal();
+    return '${safe.year}-${safe.month.toString().padLeft(2, '0')}-${safe.day.toString().padLeft(2, '0')} '
+        '${safe.hour.toString().padLeft(2, '0')}:${safe.minute.toString().padLeft(2, '0')}';
   }
 }
 
@@ -156,9 +224,10 @@ class _SyncStatusCard extends ConsumerWidget {
 /// SYNC ACTION BUTTONS
 /// =======================================================
 class _SyncActions extends ConsumerWidget {
-  const _SyncActions(this.ref);
+  const _SyncActions(this.ref, {required this.onCompleted});
 
   final WidgetRef ref;
+  final VoidCallback onCompleted;
 
   @override
   Widget build(BuildContext context, WidgetRef _) {
@@ -178,6 +247,7 @@ class _SyncActions extends ConsumerWidget {
                 successMessage: 'Synchronization completed successfully',
                 failureMessage: 'Synchronization failed',
               );
+              onCompleted();
             },
           ),
         ),
@@ -197,6 +267,7 @@ class _SyncActions extends ConsumerWidget {
                 successMessage: 'Attendance uploaded successfully',
                 failureMessage: 'Upload failed',
               );
+              onCompleted();
             },
           ),
         ),

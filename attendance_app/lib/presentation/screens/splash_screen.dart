@@ -17,7 +17,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _navigateToMain() async {
-    await Future.delayed(const Duration(seconds: 2), () {});
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
 
     // Navigate directly to main navigation screen instead of login
     Navigator.pushReplacement(
